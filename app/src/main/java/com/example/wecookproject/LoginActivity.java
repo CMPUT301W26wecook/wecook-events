@@ -26,7 +26,7 @@ public class LoginActivity extends AppCompatActivity {
         btnOrganizer.setOnClickListener(v -> handleLogin("ORGANIZER"));
 
         adminLogin.setOnClickListener(v -> {
-            // 管理员登录通常有专门的逻辑，或者也走 ID 登录
+            // There is specific logic for admin login (OR ID login)
             handleLogin("ADMIN");
         });
     }
