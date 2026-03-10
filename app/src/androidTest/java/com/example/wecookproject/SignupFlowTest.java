@@ -25,9 +25,12 @@ import androidx.test.filters.LargeTest;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.FixMethodOrder;
+import org.junit.runners.MethodSorters;
 
 @RunWith(AndroidJUnit4.class)
 @LargeTest
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class SignupFlowTest {
 
     @Rule
@@ -53,7 +56,7 @@ public class SignupFlowTest {
      * shows a validation message and does NOT navigate away.
      */
     @Test
-    public void testEmptyLoginCredentialsShowsError() {
+    public void test1_EmptyLoginCredentialsShowsError() {
         // Confirm we are on the Login screen
         // onView(withId(R.id.tv_title)).check(matches(withText("Login via your phone")));
 
@@ -70,7 +73,7 @@ public class SignupFlowTest {
      * even if login fields are empty.
      */
     @Test
-    public void testSignupPromptNavigatesWhenEmpty() {
+    public void test2_SignupPromptNavigatesWhenEmpty() {
         // Because the @Before deletes the Firestore user, the auto-login won't bypass SignupDetails.
         // Wait for Firestore to complete "does not exist" check
         try { Thread.sleep(3000); } catch (InterruptedException e) {}
@@ -86,7 +89,7 @@ public class SignupFlowTest {
      * Address line 1, City, or Postal code does NOT navigate away.
      */
     @Test
-    public void testEmptyAddressFieldsShowsError() {
+    public void test3_EmptyAddressFieldsShowsError() {
         // Navigate to the Address screen via the signup flow
         try { Thread.sleep(3000); } catch (InterruptedException e) {}
         onView(withId(R.id.text_Admin_login)).perform(click());
@@ -114,7 +117,7 @@ public class SignupFlowTest {
      * from Login → Details → Address → MainActivity.
      */
     @Test
-    public void testSignupFlow() {
+    public void test4_SignupFlow() {
         // 1. Wait for Firebase or screen load
         try { Thread.sleep(3000); } catch (InterruptedException e) {}
         
@@ -155,7 +158,7 @@ public class SignupFlowTest {
      * Signup flow with: first name, birthday, address line 1, postal code, city
      */
     @Test
-    public void testSignupFlowPartialFields1() {
+    public void test5_SignupFlowPartialFields1() {
         try { Thread.sleep(3000); } catch (InterruptedException e) {}
         onView(withId(R.id.tv_title)).check(matches(withText("Login via your phone")));
         onView(withId(R.id.text_Admin_login)).perform(click());
@@ -183,7 +186,7 @@ public class SignupFlowTest {
      * Signup flow with: first name, birthday, address line 1, address line 2, postal code, city
      */
     @Test
-    public void testSignupFlowPartialFields2() {
+    public void test6_SignupFlowPartialFields2() {
         try { Thread.sleep(3000); } catch (InterruptedException e) {}
         onView(withId(R.id.tv_title)).check(matches(withText("Login via your phone")));
         onView(withId(R.id.text_Admin_login)).perform(click());
@@ -212,7 +215,7 @@ public class SignupFlowTest {
      * Signup flow with: first name, birthday, address line 1, postal code, city, country
      */
     @Test
-    public void testSignupFlowPartialFields3() {
+    public void test7_SignupFlowPartialFields3() {
         try { Thread.sleep(3000); } catch (InterruptedException e) {}
         onView(withId(R.id.tv_title)).check(matches(withText("Login via your phone")));
         onView(withId(R.id.text_Admin_login)).perform(click());
@@ -241,7 +244,7 @@ public class SignupFlowTest {
      * Signup flow with: first name, birthday, address line 1, address line 2, postal code, city, country
      */
     @Test
-    public void testSignupFlowPartialFields4() {
+    public void test8_SignupFlowPartialFields4() {
         try { Thread.sleep(3000); } catch (InterruptedException e) {}
         onView(withId(R.id.tv_title)).check(matches(withText("Login via your phone")));
         onView(withId(R.id.text_Admin_login)).perform(click());
