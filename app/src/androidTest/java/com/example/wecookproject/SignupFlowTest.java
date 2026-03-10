@@ -25,9 +25,12 @@ import androidx.test.filters.LargeTest;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.FixMethodOrder;
+import org.junit.runners.MethodSorters;
 
 @RunWith(AndroidJUnit4.class)
 @LargeTest
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class SignupFlowTest {
 
     @Rule
@@ -53,7 +56,7 @@ public class SignupFlowTest {
      * shows a validation message and does NOT navigate away.
      */
     @Test
-    public void testEmptyLoginCredentialsShowsError() {
+    public void test1_EmptyLoginCredentialsShowsError() {
         // Confirm we are on the Login screen
         // onView(withId(R.id.tv_title)).check(matches(withText("Login via your phone")));
 
@@ -70,7 +73,7 @@ public class SignupFlowTest {
      * even if login fields are empty.
      */
     @Test
-    public void testSignupPromptNavigatesWhenEmpty() {
+    public void test2_SignupPromptNavigatesWhenEmpty() {
         // Because the @Before deletes the Firestore user, the auto-login won't bypass SignupDetails.
         // Wait for Firestore to complete "does not exist" check
         try { Thread.sleep(3000); } catch (InterruptedException e) {}
@@ -86,13 +89,14 @@ public class SignupFlowTest {
      * Address line 1, City, or Postal code does NOT navigate away.
      */
     @Test
-    public void testEmptyAddressFieldsShowsError() {
+    public void test3_EmptyAddressFieldsShowsError() {
         // Navigate to the Address screen via the signup flow
         try { Thread.sleep(3000); } catch (InterruptedException e) {}
         onView(withId(R.id.text_Admin_login)).perform(click());
         
         try { Thread.sleep(1500); } catch (InterruptedException e) {}
         onView(withId(R.id.et_first_name)).perform(typeText("John"), closeSoftKeyboard());
+        onView(withId(R.id.et_last_name)).perform(typeText("Doe"), closeSoftKeyboard());
         // Type digits only — the TextWatcher auto-inserts '/' to form MM/DD/YYYY
         onView(withId(R.id.et_birthday)).perform(typeText("01012000"), closeSoftKeyboard());
         onView(withId(R.id.btn_continue)).perform(click());
@@ -113,7 +117,7 @@ public class SignupFlowTest {
      * from Login → Details → Address → MainActivity.
      */
     @Test
-    public void testSignupFlow() {
+    public void test4_SignupFlow() {
         // 1. Wait for Firebase or screen load
         try { Thread.sleep(3000); } catch (InterruptedException e) {}
         
@@ -127,8 +131,9 @@ public class SignupFlowTest {
         try { Thread.sleep(1500); } catch (InterruptedException e) {}
         onView(withId(R.id.tv_screen_title)).check(matches(withText("Details")));
 
-        // 4. Enter first name and birthday, then continue
+        // 4. Enter first name, last name, and birthday, then continue
         onView(withId(R.id.et_first_name)).perform(typeText("John"), closeSoftKeyboard());
+        onView(withId(R.id.et_last_name)).perform(typeText("Doe"), closeSoftKeyboard());
         onView(withId(R.id.et_birthday)).perform(typeText("01012000"), closeSoftKeyboard());
         onView(withId(R.id.btn_continue)).perform(click());
 
@@ -138,11 +143,129 @@ public class SignupFlowTest {
 
         // 6. Enter required address fields, then continue
         onView(withId(R.id.et_address_line_1)).perform(typeText("123 Main St"), closeSoftKeyboard());
+        onView(withId(R.id.et_address_line_2)).perform(typeText("Apt 4B"), closeSoftKeyboard());
         onView(withId(R.id.et_city)).perform(typeText("Edmonton"), closeSoftKeyboard());
         onView(withId(R.id.et_postal_code)).perform(typeText("T6G 2R3"), closeSoftKeyboard());
+        onView(withId(R.id.et_country)).perform(typeText("Canada"), closeSoftKeyboard());
         onView(withId(R.id.btn_continue)).perform(click());
 
         // 7. Check that MainActivity (Home) is displayed (navigation no longer waits on Firestore)
+        try { Thread.sleep(2000); } catch (InterruptedException e) {}
+        onView(withText("Hello World!")).check(matches(isDisplayed()));
+    }
+
+    /**
+     * Signup flow with: first name, birthday, address line 1, postal code, city
+     */
+    @Test
+    public void test5_SignupFlowPartialFields1() {
+        try { Thread.sleep(3000); } catch (InterruptedException e) {}
+        onView(withId(R.id.tv_title)).check(matches(withText("Login via your phone")));
+        onView(withId(R.id.text_Admin_login)).perform(click());
+
+        try { Thread.sleep(1500); } catch (InterruptedException e) {}
+        onView(withId(R.id.tv_screen_title)).check(matches(withText("Details")));
+
+        onView(withId(R.id.et_first_name)).perform(typeText("John"), closeSoftKeyboard());
+        onView(withId(R.id.et_birthday)).perform(typeText("01012000"), closeSoftKeyboard());
+        onView(withId(R.id.btn_continue)).perform(click());
+
+        try { Thread.sleep(1500); } catch (InterruptedException e) {}
+        onView(withId(R.id.tv_screen_title)).check(matches(withText("Address")));
+
+        onView(withId(R.id.et_address_line_1)).perform(typeText("123 Main St"), closeSoftKeyboard());
+        onView(withId(R.id.et_postal_code)).perform(typeText("T6G 2R3"), closeSoftKeyboard());
+        onView(withId(R.id.et_city)).perform(typeText("Edmonton"), closeSoftKeyboard());
+        onView(withId(R.id.btn_continue)).perform(click());
+
+        try { Thread.sleep(2000); } catch (InterruptedException e) {}
+        onView(withText("Hello World!")).check(matches(isDisplayed()));
+    }
+
+    /**
+     * Signup flow with: first name, birthday, address line 1, address line 2, postal code, city
+     */
+    @Test
+    public void test6_SignupFlowPartialFields2() {
+        try { Thread.sleep(3000); } catch (InterruptedException e) {}
+        onView(withId(R.id.tv_title)).check(matches(withText("Login via your phone")));
+        onView(withId(R.id.text_Admin_login)).perform(click());
+
+        try { Thread.sleep(1500); } catch (InterruptedException e) {}
+        onView(withId(R.id.tv_screen_title)).check(matches(withText("Details")));
+
+        onView(withId(R.id.et_first_name)).perform(typeText("Jane"), closeSoftKeyboard());
+        onView(withId(R.id.et_birthday)).perform(typeText("02022000"), closeSoftKeyboard());
+        onView(withId(R.id.btn_continue)).perform(click());
+
+        try { Thread.sleep(1500); } catch (InterruptedException e) {}
+        onView(withId(R.id.tv_screen_title)).check(matches(withText("Address")));
+
+        onView(withId(R.id.et_address_line_1)).perform(typeText("456 Elm St"), closeSoftKeyboard());
+        onView(withId(R.id.et_address_line_2)).perform(typeText("Suite 100"), closeSoftKeyboard());
+        onView(withId(R.id.et_postal_code)).perform(typeText("T2P 1J9"), closeSoftKeyboard());
+        onView(withId(R.id.et_city)).perform(typeText("Calgary"), closeSoftKeyboard());
+        onView(withId(R.id.btn_continue)).perform(click());
+
+        try { Thread.sleep(2000); } catch (InterruptedException e) {}
+        onView(withText("Hello World!")).check(matches(isDisplayed()));
+    }
+
+    /**
+     * Signup flow with: first name, birthday, address line 1, postal code, city, country
+     */
+    @Test
+    public void test7_SignupFlowPartialFields3() {
+        try { Thread.sleep(3000); } catch (InterruptedException e) {}
+        onView(withId(R.id.tv_title)).check(matches(withText("Login via your phone")));
+        onView(withId(R.id.text_Admin_login)).perform(click());
+
+        try { Thread.sleep(1500); } catch (InterruptedException e) {}
+        onView(withId(R.id.tv_screen_title)).check(matches(withText("Details")));
+
+        onView(withId(R.id.et_first_name)).perform(typeText("Alice"), closeSoftKeyboard());
+        onView(withId(R.id.et_birthday)).perform(typeText("03032000"), closeSoftKeyboard());
+        onView(withId(R.id.btn_continue)).perform(click());
+
+        try { Thread.sleep(1500); } catch (InterruptedException e) {}
+        onView(withId(R.id.tv_screen_title)).check(matches(withText("Address")));
+
+        onView(withId(R.id.et_address_line_1)).perform(typeText("789 Maple St"), closeSoftKeyboard());
+        onView(withId(R.id.et_postal_code)).perform(typeText("V6B 1A1"), closeSoftKeyboard());
+        onView(withId(R.id.et_city)).perform(typeText("Vancouver"), closeSoftKeyboard());
+        onView(withId(R.id.et_country)).perform(typeText("Canada"), closeSoftKeyboard());
+        onView(withId(R.id.btn_continue)).perform(click());
+
+        try { Thread.sleep(2000); } catch (InterruptedException e) {}
+        onView(withText("Hello World!")).check(matches(isDisplayed()));
+    }
+
+    /**
+     * Signup flow with: first name, birthday, address line 1, address line 2, postal code, city, country
+     */
+    @Test
+    public void test8_SignupFlowPartialFields4() {
+        try { Thread.sleep(3000); } catch (InterruptedException e) {}
+        onView(withId(R.id.tv_title)).check(matches(withText("Login via your phone")));
+        onView(withId(R.id.text_Admin_login)).perform(click());
+
+        try { Thread.sleep(1500); } catch (InterruptedException e) {}
+        onView(withId(R.id.tv_screen_title)).check(matches(withText("Details")));
+
+        onView(withId(R.id.et_first_name)).perform(typeText("Bob"), closeSoftKeyboard());
+        onView(withId(R.id.et_birthday)).perform(typeText("04042000"), closeSoftKeyboard());
+        onView(withId(R.id.btn_continue)).perform(click());
+
+        try { Thread.sleep(1500); } catch (InterruptedException e) {}
+        onView(withId(R.id.tv_screen_title)).check(matches(withText("Address")));
+
+        onView(withId(R.id.et_address_line_1)).perform(typeText("101 Oak St"), closeSoftKeyboard());
+        onView(withId(R.id.et_address_line_2)).perform(typeText("Apt 2"), closeSoftKeyboard());
+        onView(withId(R.id.et_postal_code)).perform(typeText("M5V 2H1"), closeSoftKeyboard());
+        onView(withId(R.id.et_city)).perform(typeText("Toronto"), closeSoftKeyboard());
+        onView(withId(R.id.et_country)).perform(typeText("Canada"), closeSoftKeyboard());
+        onView(withId(R.id.btn_continue)).perform(click());
+
         try { Thread.sleep(2000); } catch (InterruptedException e) {}
         onView(withText("Hello World!")).check(matches(isDisplayed()));
     }
