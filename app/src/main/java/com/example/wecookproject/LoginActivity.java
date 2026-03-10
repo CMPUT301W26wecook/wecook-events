@@ -11,6 +11,8 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 public class LoginActivity extends AppCompatActivity {
     @Override
@@ -42,8 +44,26 @@ public class LoginActivity extends AppCompatActivity {
             String token = task.getResult();
             Log.d("LOGIN_INFO", "Device ID: " + androidId);
             Log.d("LOGIN_INFO", "FCM Token: " + token);
-            Intent intent = new Intent(LoginActivity.this, SignupDetailsActivity.class);
-            startActivity(intent);
+
+            FirebaseFirestore db = FirebaseFirestore.getInstance();
+            db.collection("users").document(androidId).get().addOnCompleteListener(userTask -> {
+                if (userTask.isSuccessful()) {
+                    DocumentSnapshot document = userTask.getResult();
+                    if (document.exists()) {
+                        Log.d("LOGIN_INFO", "User exists, routing to MainActivity.");
+                        Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+                        startActivity(intent);
+                    } else {
+                        Log.d("LOGIN_INFO", "User does not exist, routing to SignupDetailsActivity.");
+                        Intent intent = new Intent(LoginActivity.this, SignupDetailsActivity.class);
+                        startActivity(intent);
+                    }
+                } else {
+                    Log.e("LOGIN_INFO", "Error checking user document", userTask.getException());
+                    Intent intent = new Intent(LoginActivity.this, SignupDetailsActivity.class);
+                    startActivity(intent);
+                }
+            });
         });
     }
 }
