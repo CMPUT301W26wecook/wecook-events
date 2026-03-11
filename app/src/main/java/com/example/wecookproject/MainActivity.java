@@ -59,7 +59,7 @@ public class MainActivity extends AppCompatActivity {
             } else if (itemId == R.id.nav_history) {
                 Toast.makeText(this, "History (coming soon)", Toast.LENGTH_SHORT).show();
             } else if (itemId == R.id.nav_profile) {
-                startActivity(new Intent(MainActivity.this, Profile.class));
+                startActivity(new Intent(MainActivity.this, OrganizerProfileActivity.class));
             }
             return true;
         });
