@@ -30,6 +30,7 @@ import org.junit.runners.MethodSorters;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.Date;
 
 @RunWith(AndroidJUnit4.class)
 @LargeTest
@@ -209,7 +210,8 @@ public class OrganizerFlowTest {
         // Fill out the Create Event form
         String testEventName = "Espresso Test Event";
         onView(withId(R.id.et_event_name)).perform(typeText(testEventName), closeSoftKeyboard());
-        onView(withId(R.id.et_registration_period)).perform(typeText("2026-04-01 to 2026-04-10"), closeSoftKeyboard());
+        onView(withId(R.id.et_registration_start_date)).perform(typeText("2026-04-01"), closeSoftKeyboard());
+        onView(withId(R.id.et_registration_end_date)).perform(typeText("2026-04-10"), closeSoftKeyboard());
         onView(withId(R.id.et_max_waitlist)).perform(typeText("50"), closeSoftKeyboard());
 
         // Select radio buttons
@@ -239,15 +241,30 @@ public class OrganizerFlowTest {
     @Test
     public void test8_EventDetailsScreenDisplaysCorrectly() {
         CountDownLatch latch = new CountDownLatch(1);
-        Event mockEvent = new Event("mockEventId", "org123", "Test Event Details", 
-                "01/01/2026 to 02/02/2026", "Open", 100, 50, 
-                "Random", false, "Edmonton", "Test description");
+        Event mockEvent = new Event();
+        mockEvent.setEventId("mockEventId");
+        mockEvent.setOrganizerId("org123");
+        mockEvent.setEventName("Test Event Details");
+        mockEvent.setRegistrationStartDate(new Date(2026 - 1900, 0, 1));  // 2026-01-01
+        mockEvent.setRegistrationEndDate(new Date(2026 - 1900, 1, 2));    // 2026-02-02
+        mockEvent.setEnrollmentCriteria("Open");
+        mockEvent.setMaxWaitlist(100);
+        mockEvent.setCurrentWaitlistCount(50);
+        mockEvent.setLotteryMethodology("Random");
+        mockEvent.setGeolocationRequired(false);
+        mockEvent.setLocation("Edmonton");
+        mockEvent.setDescription("Test description");
 
         FirebaseFirestore.getInstance().collection("events").document("mockEventId")
                 .set(mockEvent).addOnCompleteListener(task -> latch.countDown());
         try {
-            latch.await(5, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {}
+            boolean success = latch.await(5, TimeUnit.SECONDS);
+            if (!success) {
+                System.err.println("Warning: Mock event creation timed out.");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
 
         Intent intent = new Intent(ApplicationProvider.getApplicationContext(), OrganizerEventDetailsActivity.class);
         intent.putExtra("eventId", "mockEventId");

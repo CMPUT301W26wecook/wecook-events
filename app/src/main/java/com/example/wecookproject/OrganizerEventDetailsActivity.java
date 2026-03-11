@@ -12,9 +12,13 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 
+import java.text.SimpleDateFormat;
+import java.util.Locale;
+
 public class OrganizerEventDetailsActivity extends AppCompatActivity {
     
     private ListenerRegistration eventListener;
+    private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -46,7 +50,18 @@ public class OrganizerEventDetailsActivity extends AppCompatActivity {
                                 tvEventNameBig.setText(event.getEventName());
                                 tvEventLocation.setText(event.getLocation());
                                 tvEventNameDetail.setText(event.getEventName());
-                                tvEventDates.setText(event.getRegistrationPeriod());
+                                
+                                // Format registration dates
+                                String registrationDateText = "TBD";
+                                if (event.getRegistrationStartDate() != null && event.getRegistrationEndDate() != null) {
+                                    registrationDateText = dateFormat.format(event.getRegistrationStartDate()) + " to " + dateFormat.format(event.getRegistrationEndDate());
+                                } else if (event.getRegistrationStartDate() != null) {
+                                    registrationDateText = "From " + dateFormat.format(event.getRegistrationStartDate());
+                                } else if (event.getRegistrationEndDate() != null) {
+                                    registrationDateText = "Until " + dateFormat.format(event.getRegistrationEndDate());
+                                }
+                                tvEventDates.setText(registrationDateText);
+                                
                                 tvOrganizerLabel.setText("Organizer: " + event.getOrganizerId().substring(0, Math.min(event.getOrganizerId().length(), 5)) + "...");
                                 tvWaitlistLabel.setText("Waitlist: " + event.getCurrentWaitlistCount() + "/" + event.getMaxWaitlist());
                                 
