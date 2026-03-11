@@ -33,7 +33,6 @@ public class LoginActivity extends AppCompatActivity {
         btnOrganizer.setOnClickListener(v -> handleLogin("ORGANIZER"));
 
         adminLogin.setOnClickListener(v -> {
-            // 管理员登录通常有专门的逻辑，或者也走 ID 登录
             handleLogin("ADMIN");
         });
 
@@ -90,7 +89,10 @@ public class LoginActivity extends AppCompatActivity {
 
     private void routeUser() {
         Intent jumpIntent;
-        if (isUserExists) {
+        if (clickedRole.equals("ADMIN")) {
+            jumpIntent = new Intent(LoginActivity.this, AdminLoginActivity.class);
+        }
+        else if (isUserExists) {
             if ("ORGANIZER".equals(clickedRole)) {
                 jumpIntent = new Intent(LoginActivity.this, OrganizerHomeActivity.class);
             } else {
