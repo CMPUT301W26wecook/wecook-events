@@ -15,6 +15,11 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 public class LoginActivity extends AppCompatActivity {
+    private boolean isDbQueryReady = false;
+    private boolean isUserExists = false;
+    private boolean isLoginClicked = false;
+    private String clickedRole = "";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -30,9 +35,11 @@ public class LoginActivity extends AppCompatActivity {
         adminLogin.setOnClickListener(v -> {
             handleLogin("ADMIN");
         });
+
+        prefetchLoginData();
     }
 
-    private void handleLogin(String role) {
+    private void prefetchLoginData() {
         String androidId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
 
         com.google.firebase.messaging.FirebaseMessaging.getInstance().getToken().addOnCompleteListener(task -> {
@@ -46,24 +53,53 @@ public class LoginActivity extends AppCompatActivity {
 
             FirebaseFirestore db = FirebaseFirestore.getInstance();
             db.collection("users").document(androidId).get().addOnCompleteListener(userTask -> {
+                isDbQueryReady = true;
                 if (userTask.isSuccessful()) {
                     DocumentSnapshot document = userTask.getResult();
                     if (document.exists()) {
+                        isUserExists = true;
                         Log.d("LOGIN_INFO", "User exists, routing to MainActivity.");
-                        Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-                        startActivity(intent);
                     } else {
+                        isUserExists = false;
                         Log.d("LOGIN_INFO", "User does not exist, routing to SignupDetailsActivity.");
-                        Intent intent = new Intent(LoginActivity.this, SignupDetailsActivity.class);
-                        startActivity(intent);
                     }
                 } else {
+                    isUserExists = false;
                     Log.e("LOGIN_INFO", "Error checking user document", userTask.getException());
-                    Intent intent = new Intent(LoginActivity.this, SignupDetailsActivity.class);
-                    startActivity(intent);
+                }
+
+                if (isLoginClicked) {
+                    routeUser();
                 }
             });
         });
+    }
+
+    private void handleLogin(String role) {
+        clickedRole = role; // Store if needed later
+        isLoginClicked = true;
+
+        if (isDbQueryReady) {
+            routeUser();
+        } else {
+            // Wait for prefetchLoginData to complete
+            Log.d("LOGIN_INFO", "Waiting for DB query to complete...");
+        }
+    }
+
+    private void routeUser() {
+        Intent jumpIntent;
+        if (isUserExists) {
+            if ("ORGANIZER".equals(clickedRole)) {
+                jumpIntent = new Intent(LoginActivity.this, OrganizerHomeActivity.class);
+            } else {
+                jumpIntent = new Intent(LoginActivity.this, MainActivity.class);
+            }
+        } else {
+            jumpIntent = new Intent(LoginActivity.this, SignupDetailsActivity.class);
+            jumpIntent.putExtra("clickedRole", clickedRole);
+        }
+        startActivity(jumpIntent);
     }
 }
 
