@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -27,6 +29,30 @@
             android:exported="false" />
         <activity
             android:name=".SignupAddressActivity"
+            android:exported="false" />
+        <activity
+            android:name=".OrganizerHomeActivity"
+            android:exported="false" />
+        <activity
+            android:name=".OrganizerProfileActivity"
+            android:exported="false" />
+        <activity
+            android:name=".OrganizerCreateEventActivity"
+            android:exported="false" />
+        <activity
+            android:name=".OrganizerEditEventActivity"
+            android:exported="false" />
+        <activity
+            android:name=".OrganizerEventDetailsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".OrganizerEventMapActivity"
+            android:exported="false" />
+        <activity
+            android:name=".OrganizerNotificationActivity"
+            android:exported="false" />
+        <activity
+            android:name=".OrganizerEntrantListActivity"
             android:exported="false" />
     </application>
 

@@ -19,6 +19,7 @@ public class SignupDetailsActivity extends AppCompatActivity {
         ImageView backButton = findViewById(R.id.iv_back);
         Button continueButton = findViewById(R.id.btn_continue);
         EditText etFirstName = findViewById(R.id.et_first_name);
+        EditText etLastName = findViewById(R.id.et_last_name);
         EditText etBirthday = findViewById(R.id.et_birthday);
 
         backButton.setOnClickListener(v -> finish());
@@ -63,12 +64,29 @@ public class SignupDetailsActivity extends AppCompatActivity {
 
         continueButton.setOnClickListener(v -> {
             String firstName = etFirstName.getText().toString().trim();
+            String lastName = etLastName.getText().toString().trim();
             String birthday = etBirthday.getText().toString().trim();
-            if (firstName.isEmpty() || birthday.isEmpty()) {
-                Toast.makeText(this, "First name and Birthday cannot be empty", Toast.LENGTH_SHORT).show();
-                return;
+            
+            String clickedRole = getIntent().getStringExtra("clickedRole");
+            if ("ORGANIZER".equals(clickedRole)) {
+                if (firstName.isEmpty() || lastName.isEmpty() || birthday.isEmpty()) {
+                    Toast.makeText(this, "First name, Last name, and Birthday cannot be empty", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+            } else {
+                if (firstName.isEmpty() || birthday.isEmpty()) {
+                    Toast.makeText(this, "First name and Birthday cannot be empty", Toast.LENGTH_SHORT).show();
+                    return;
+                }
             }
+
             Intent intent = new Intent(SignupDetailsActivity.this, SignupAddressActivity.class);
+            intent.putExtra("firstName", firstName);
+            intent.putExtra("lastName", lastName);
+            intent.putExtra("birthday", birthday);
+            if (getIntent().hasExtra("clickedRole")) {
+                intent.putExtra("clickedRole", clickedRole);
+            }
             startActivity(intent);
         });
     }
