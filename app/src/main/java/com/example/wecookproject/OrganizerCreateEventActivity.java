@@ -102,8 +102,8 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
                     lotteryMethodology,
                     false, // Default geolocation
                     "Location TBD", // Default location
-                    "" // Default description
-                    "" // Default QR code URL
+                    "", // Default description
+                    "", // Default QR code URL
                     "" // Default Poster URL
             );
 

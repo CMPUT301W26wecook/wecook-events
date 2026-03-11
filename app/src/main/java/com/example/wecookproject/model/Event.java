@@ -20,9 +20,18 @@ public class Event {
     public Event() {
     }
 
+    // Constructor with 11 arguments
     public Event(String eventId, String organizerId, String eventName, String registrationPeriod,
                  String enrollmentCriteria, int maxWaitlist, int currentWaitlistCount, String lotteryMethodology,
                  boolean geolocationRequired, String location, String description) {
+        this(eventId, organizerId, eventName, registrationPeriod, enrollmentCriteria, maxWaitlist,
+                currentWaitlistCount, lotteryMethodology, geolocationRequired, location, description, "", "");
+    }
+
+    // Constructor with 13 arguments
+    public Event(String eventId, String organizerId, String eventName, String registrationPeriod,
+                 String enrollmentCriteria, int maxWaitlist, int currentWaitlistCount, String lotteryMethodology,
+                 boolean geolocationRequired, String location, String description, String qrCodePath, String posterPath) {
         this.eventId = eventId;
         this.organizerId = organizerId;
         this.eventName = eventName;
@@ -34,6 +43,8 @@ public class Event {
         this.geolocationRequired = geolocationRequired;
         this.location = location;
         this.description = description;
+        this.qrCodePath = qrCodePath;
+        this.posterPath = posterPath;
     }
 
     public String getEventId() {
@@ -123,5 +134,20 @@ public class Event {
     public void setDescription(String description) {
         this.description = description;
     }
-  
+
+    public String getPosterPath() {
+        return posterPath;
+    }
+
+    public void setPosterPath(String posterPath) {
+        this.posterPath = posterPath;
+    }
+
+    public String getQrCodePath() {
+        return qrCodePath;
+    }
+
+    public void setQrCodePath(String qrCodePath) {
+        this.qrCodePath = qrCodePath;
+    }
 }
