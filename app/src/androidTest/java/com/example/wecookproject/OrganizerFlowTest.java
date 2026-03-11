@@ -10,6 +10,7 @@ import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
 
+import android.content.Intent;
 import android.provider.Settings;
 
 import androidx.test.core.app.ActivityScenario;
@@ -18,6 +19,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
 
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.example.wecookproject.model.Event;
 
 import org.junit.After;
 import org.junit.Before;
@@ -228,6 +230,43 @@ public class OrganizerFlowTest {
         // If we had Espresso Contrib we could check for the specific item text.
 
         homeScenario.close();
+    }
+
+    /**
+     * Verify the Event Details screen correctly displays information and buttons 
+     * when opened with a valid event ID.
+     */
+    @Test
+    public void test8_EventDetailsScreenDisplaysCorrectly() {
+        CountDownLatch latch = new CountDownLatch(1);
+        Event mockEvent = new Event("mockEventId", "org123", "Test Event Details", 
+                "01/01/2026 to 02/02/2026", "Open", 100, 50, 
+                "Random", false, "Edmonton", "Test description");
+
+        FirebaseFirestore.getInstance().collection("events").document("mockEventId")
+                .set(mockEvent).addOnCompleteListener(task -> latch.countDown());
+        try {
+            latch.await(5, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {}
+
+        Intent intent = new Intent(ApplicationProvider.getApplicationContext(), OrganizerEventDetailsActivity.class);
+        intent.putExtra("eventId", "mockEventId");
+        ActivityScenario<OrganizerEventDetailsActivity> detailsScenario = 
+                ActivityScenario.launch(intent);
+
+        safeSleep(1500);
+
+        // Check if layout fields are shown
+        onView(withId(R.id.tv_event_name_detail)).check(matches(isDisplayed()));
+        onView(withId(R.id.tv_event_dates)).check(matches(isDisplayed()));
+        onView(withId(R.id.btn_edit_event)).check(matches(isDisplayed()));
+        onView(withId(R.id.btn_view_waitlist)).check(matches(isDisplayed()));
+        onView(withId(R.id.btn_registration_map)).check(matches(isDisplayed()));
+
+        detailsScenario.close();
+        
+        // Cleanup the mock document
+        FirebaseFirestore.getInstance().collection("events").document("mockEventId").delete();
     }
 
     private void performFullSignup() {
