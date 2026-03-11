@@ -21,7 +21,7 @@ public class OrganizerEditEventActivity extends AppCompatActivity {
                 tilRegistrationPeriod.setHint("Registration Period");
             } else {
                 if (etRegistrationPeriod.getText() != null && etRegistrationPeriod.getText().toString().isEmpty()) {
-                    tilRegistrationPeriod.setHint("Registration Period (YYYY-MM-DD)");
+                    tilRegistrationPeriod.setHint("Registration Period (YYYY-MM-DD to YYYY-MM-DD)");
                 } else {
                     tilRegistrationPeriod.setHint("Registration Period");
                 }
