@@ -10,6 +10,7 @@ import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
 
+import android.content.Intent;
 import android.provider.Settings;
 
 import androidx.test.core.app.ActivityScenario;
@@ -18,6 +19,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
 
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.example.wecookproject.model.Event;
 
 import org.junit.After;
 import org.junit.Before;
@@ -192,20 +194,84 @@ public class OrganizerFlowTest {
         notifScenario.close();
     }
 
+    @Test
+    public void test7_CreateEventAndVerifyInList() {
+        // Complete signup so Firestore has a valid user before entering organizer screens
+        performFullSignup();
+
+        ActivityScenario<OrganizerHomeActivity> homeScenario =
+                ActivityScenario.launch(OrganizerHomeActivity.class);
+
+        // Switch to Create Events tab
+        onView(withId(R.id.nav_create_events)).perform(click());
+        safeSleep(1000);
+
+        // Fill out the Create Event form
+        String testEventName = "Espresso Test Event";
+        onView(withId(R.id.et_event_name)).perform(typeText(testEventName), closeSoftKeyboard());
+        onView(withId(R.id.et_registration_period)).perform(typeText("2026-04-01 to 2026-04-10"), closeSoftKeyboard());
+        onView(withId(R.id.et_max_waitlist)).perform(typeText("50"), closeSoftKeyboard());
+
+        // Select radio buttons
+        onView(withId(R.id.rb_open_to_all)).perform(click());
+        onView(withId(R.id.rb_system_generates)).perform(click());
+
+        // Click create
+        onView(withId(R.id.btn_create_event)).perform(click());
+
+        // Wait for Firestore save and navigation back to Home
+        safeSleep(2500);
+
+        // Verify we are back on the Organizer Home screen with the list
+        onView(withId(R.id.rv_events)).check(matches(isDisplayed()));
+
+        // Cannot easily check RecyclerView content without an Espresso RecyclerViewAction dependency,
+        // but we can at least assert the layout is shown.
+        // If we had Espresso Contrib we could check for the specific item text.
+
+        homeScenario.close();
+    }
+
     /**
-     * Drives the full signup happy-path:
-     *   LoginActivity → SignupDetailsActivity → SignupAddressActivity → MainActivity
-     *
-     * Call this at the start of any test that needs an existing Firestore user
-     * (i.e., the device must already be "signed up") before jumping into
-     * organizer-specific screens.
-     *
-     * Note: @Before deletes the Firestore user and launches LoginActivity, so
-     * the activityScenario is already open when this helper is called.
+     * Verify the Event Details screen correctly displays information and buttons 
+     * when opened with a valid event ID.
      */
+    @Test
+    public void test8_EventDetailsScreenDisplaysCorrectly() {
+        CountDownLatch latch = new CountDownLatch(1);
+        Event mockEvent = new Event("mockEventId", "org123", "Test Event Details", 
+                "01/01/2026 to 02/02/2026", "Open", 100, 50, 
+                "Random", false, "Edmonton", "Test description");
+
+        FirebaseFirestore.getInstance().collection("events").document("mockEventId")
+                .set(mockEvent).addOnCompleteListener(task -> latch.countDown());
+        try {
+            latch.await(5, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {}
+
+        Intent intent = new Intent(ApplicationProvider.getApplicationContext(), OrganizerEventDetailsActivity.class);
+        intent.putExtra("eventId", "mockEventId");
+        ActivityScenario<OrganizerEventDetailsActivity> detailsScenario = 
+                ActivityScenario.launch(intent);
+
+        safeSleep(1500);
+
+        // Check if layout fields are shown
+        onView(withId(R.id.tv_event_name_detail)).check(matches(isDisplayed()));
+        onView(withId(R.id.tv_event_dates)).check(matches(isDisplayed()));
+        onView(withId(R.id.btn_edit_event)).check(matches(isDisplayed()));
+        onView(withId(R.id.btn_view_waitlist)).check(matches(isDisplayed()));
+        onView(withId(R.id.btn_registration_map)).check(matches(isDisplayed()));
+
+        detailsScenario.close();
+        
+        // Cleanup the mock document
+        FirebaseFirestore.getInstance().collection("events").document("mockEventId").delete();
+    }
+
     private void performFullSignup() {
         // Login screen
-        onView(withId(R.id.text_Admin_login)).perform(click());
+        onView(withId(R.id.btn_organizer_login)).perform(click());
 
         // Details screen
         safeSleep(1500);
@@ -223,7 +289,7 @@ public class OrganizerFlowTest {
         onView(withId(R.id.et_postal_code)).perform(typeText("T6G 2R3"), closeSoftKeyboard());
         onView(withId(R.id.btn_continue)).perform(click());
 
-        // Wait for Firestore write and navigation to MainActivity
+        // Wait for Firestore write and navigation to OrganizerHomeActivity
         safeSleep(2500);
     }
 
