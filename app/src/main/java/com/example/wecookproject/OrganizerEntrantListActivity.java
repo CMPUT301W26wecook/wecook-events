@@ -36,8 +36,8 @@ public class OrganizerEntrantListActivity extends AppCompatActivity {
         findViewById(R.id.btn_view_invited).setOnClickListener(v -> {
             // TODO: switch to invited view
         });
-        findViewById(R.id.btn_manual_draw).setOnClickListener(v -> {
-            // TODO: perform manual draw
+        findViewById(R.id.btn_lottery_draw).setOnClickListener(v -> {
+            // TODO: perform lottery draw
         });
         findViewById(R.id.btn_redraw_entrants).setOnClickListener(v -> {
             // TODO: redraw entrants
