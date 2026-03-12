@@ -15,17 +15,21 @@ import java.util.List;
 
 public class ListElementAdapter extends RecyclerView.Adapter<ListElementAdapter.ListElementViewHolder> {
 
-    public interface OnMenuActionListener {
-        void onShowDetail(User user);
-        void onDelete(User user, int position);
+    public static abstract class OnMenuActionListener {
+        public void onShowDetail(User user) {}
+        public void onDelete(User user, int position) {}
     }
 
     private final List<User> userList;
     private final List<Boolean> selectedList;
     private OnMenuActionListener menuActionListener;
+    private AdminViewModel viewModel;
+    private boolean showDetailOption = true;
+    private boolean showDeleteOption = true;
 
-    public ListElementAdapter(List<User> userList) {
+    public ListElementAdapter(List<User> userList, AdminViewModel viewModel) {
         this.userList = userList;
+        this.viewModel = viewModel;
         this.selectedList = new ArrayList<>();
         for (int i = 0; i < userList.size(); i++) {
             selectedList.add(false);
@@ -34,6 +38,14 @@ public class ListElementAdapter extends RecyclerView.Adapter<ListElementAdapter.
 
     public void setOnMenuActionListener(OnMenuActionListener listener) {
         this.menuActionListener = listener;
+    }
+
+    public void setShowDetailOption(boolean showDetailOption) {
+        this.showDetailOption = showDetailOption;
+    }
+
+    public void setShowDeleteOption(boolean showDeleteOption) {
+        this.showDeleteOption = showDeleteOption;
     }
 
     @NonNull
@@ -60,11 +72,19 @@ public class ListElementAdapter extends RecyclerView.Adapter<ListElementAdapter.
 
         holder.btnElementMenu.setOnClickListener(v -> {
             PopupMenu popup = new PopupMenu(v.getContext(), v);
-            popup.getMenu().add("Show Detail");
-            popup.getMenu().add("Delete");
+            if (showDetailOption) {
+                popup.getMenu().add("Show Detail");
+            }
+            if (showDeleteOption) {
+                popup.getMenu().add("Delete");
+            }
+            
             popup.setOnMenuItemClickListener(item -> {
                 if (menuActionListener != null) {
                     if (item.getTitle().equals("Show Detail")) {
+                        if (viewModel != null) {
+                            viewModel.selectUser(user);
+                        }
                         menuActionListener.onShowDetail(user);
                     } else if (item.getTitle().equals("Delete")) {
                         menuActionListener.onDelete(user, holder.getBindingAdapterPosition());
@@ -75,7 +95,6 @@ public class ListElementAdapter extends RecyclerView.Adapter<ListElementAdapter.
             popup.show();
         });
 
-        // Remove the whole item click listener as per requirement
         holder.itemView.setOnClickListener(null);
     }
 

@@ -22,6 +22,7 @@ public class AdminLoginActivity extends AppCompatActivity {
             String username = etUsername.getText().toString().trim();
             String password = etPassword.getText().toString().trim();
 
+            // Will be replaced with authentication logic in the future
             if (username.equals("admin") && password.equals("admin")) {
                 Intent intent = new Intent(AdminLoginActivity.this, AdminMainActivity.class);
                 startActivity(intent);

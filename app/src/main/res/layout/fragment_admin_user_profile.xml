@@ -73,7 +73,7 @@
                 android:text="Date of Birth" />
 
             <TextView
-                android:id="@+id/tv_address"
+                android:id="@+id/tv_address1"
                 android:layout_width="match_parent"
                 android:layout_height="50dp"
                 android:layout_marginTop="6dp"
@@ -81,7 +81,18 @@
                 android:gravity="center_vertical"
                 android:paddingStart="12dp"
                 android:paddingEnd="12dp"
-                android:text="Address" />
+                android:text="Address1" />
+
+            <TextView
+                android:id="@+id/tv_address2"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:layout_marginTop="6dp"
+                android:layout_marginBottom="6dp"
+                android:gravity="center_vertical"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:text="Address2" />
 
             <TextView
                 android:id="@+id/tv_city"
@@ -124,7 +135,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
-        android:text="Delete Account"
+        android:text="Delete Profile"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
