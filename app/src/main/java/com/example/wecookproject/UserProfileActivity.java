@@ -88,8 +88,10 @@ public class UserProfileActivity extends AppCompatActivity {
             notificationsEnabled = !notificationsEnabled;
 
             if (notificationsEnabled) {
+                ivNotifications.setImageResource(R.drawable.ic_notifications);
                 Toast.makeText(this, "Notifications ON", Toast.LENGTH_SHORT).show();
             } else {
+                ivNotifications.setImageResource(R.drawable.ic_notifications_off);
                 Toast.makeText(this, "Notifications OFF", Toast.LENGTH_SHORT).show();
             }
         });
