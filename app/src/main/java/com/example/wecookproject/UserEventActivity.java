@@ -256,7 +256,14 @@ public class UserEventActivity extends AppCompatActivity {
     }
 
     private String getWaitlistSummary(UserEventItem eventItem) {
-        return "Waitlist: " + eventItem.waitlistEntrants.size() + "/" + eventItem.maxWaitlist;
+        int currentCount = eventItem.waitlistEntrants.size();
+        int maxCapacity = eventItem.maxWaitlist;
+        
+        if (maxCapacity <= 0) {
+            return "Current Waitlist: " + currentCount + " (No limit)";
+        } else {
+            return "Current Waitlist: " + currentCount + "/" + maxCapacity;
+        }
     }
 
     private String abbreviateOrganizer(String organizerId) {

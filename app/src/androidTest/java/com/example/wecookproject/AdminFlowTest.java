@@ -103,8 +103,8 @@ public class AdminFlowTest {
         createdEventId = findEventIdByName(createdEventName);
         assertNotNull("Expected created event to exist in Firestore", createdEventId);
 
-        ActivityScenario<AdminEventActivity> adminScenario =
-                ActivityScenario.launch(AdminEventActivity.class);
+        ActivityScenario<AdminEvent> adminScenario =
+                ActivityScenario.launch(AdminEvent.class);
 
         safeSleep(2000);
         onView(withText(createdEventName)).check(matches(isDisplayed()));
