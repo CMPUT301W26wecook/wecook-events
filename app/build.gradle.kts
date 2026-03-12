@@ -39,6 +39,7 @@ dependencies {
     implementation(libs.constraintlayout)
     implementation(libs.camera.camera2.pipe)
     implementation(libs.firebase.messaging)
+    implementation(libs.recyclerview)
     implementation(libs.firebase.storage)
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)

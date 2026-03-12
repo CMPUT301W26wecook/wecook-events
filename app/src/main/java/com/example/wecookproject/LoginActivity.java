@@ -1,9 +1,7 @@
 package com.example.wecookproject;
 
-import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.RemoteException;
 import android.provider.Settings;
 import android.util.Log;
 import android.widget.Button;
@@ -33,7 +31,6 @@ public class LoginActivity extends AppCompatActivity {
         btnOrganizer.setOnClickListener(v -> handleLogin("ORGANIZER"));
 
         adminLogin.setOnClickListener(v -> {
-            // 管理员登录通常有专门的逻辑，或者也走 ID 登录
             handleLogin("ADMIN");
         });
 
@@ -94,7 +91,7 @@ public class LoginActivity extends AppCompatActivity {
             if ("ORGANIZER".equals(clickedRole)) {
                 jumpIntent = new Intent(LoginActivity.this, OrganizerHomeActivity.class);
             } else {
-                jumpIntent = new Intent(LoginActivity.this, MainActivity.class);
+                jumpIntent = new Intent(LoginActivity.this, UserEventActivity.class);
             }
         } else {
             jumpIntent = new Intent(LoginActivity.this, SignupDetailsActivity.class);
