@@ -3,6 +3,7 @@ package com.example.wecookproject;
 import android.os.Bundle;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -69,6 +70,23 @@ public class AdminEventActivity extends AppCompatActivity {
             return;
         }
 
+        showDeleteConfirmation(selectedEventIds);
+    }
+
+    private void showDeleteConfirmation(List<String> selectedEventIds) {
+        String message = selectedEventIds.size() == 1
+                ? "Delete the selected event?"
+                : "Delete the selected events?";
+
+        new AlertDialog.Builder(this)
+                .setTitle("Confirm deletion")
+                .setMessage(message)
+                .setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss())
+                .setPositiveButton("Delete", (dialog, which) -> deleteSelectedEvents(selectedEventIds))
+                .show();
+    }
+
+    private void deleteSelectedEvents(List<String> selectedEventIds) {
         WriteBatch batch = db.batch();
         for (String eventId : selectedEventIds) {
             batch.delete(db.collection("events").document(eventId));
