@@ -30,6 +30,7 @@ public class UserHistoryActivity extends AppCompatActivity {
     private TextView tvEmptyState;
     private UserHistoryAdapter adapter;
     private String entrantId;
+    private BottomNavigationView bottomNav;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,7 +40,7 @@ public class UserHistoryActivity extends AppCompatActivity {
         entrantId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
         rvHistory = findViewById(R.id.rv_history);
         tvEmptyState = findViewById(R.id.tv_history_empty_state);
-        BottomNavigationView bottomNav = findViewById(R.id.bottom_nav);
+        bottomNav = findViewById(R.id.bottom_nav);
 
         rvHistory.setLayoutManager(new LinearLayoutManager(this));
         adapter = new UserHistoryAdapter(historyItems, new UserHistoryAdapter.Listener() {
@@ -57,28 +58,40 @@ public class UserHistoryActivity extends AppCompatActivity {
         });
         rvHistory.setAdapter(adapter);
 
+        setupBottomNav();
+
+        loadHistory();
+    }
+
+    private void setupBottomNav() {
         bottomNav.setSelectedItemId(R.id.nav_history);
+
         bottomNav.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
-            if (itemId == R.id.nav_events) {
-                Intent intent = new Intent(this, UserEventActivity.class);
+
+            if (itemId == R.id.nav_history) {
+                return true;
+            } else if (itemId == R.id.nav_events) {
+                Intent intent = new Intent(UserHistoryActivity.this, UserEventActivity.class);
                 intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
                 startActivity(intent);
+                overridePendingTransition(0, 0);
+                finish();
+                return true;
+            } else if (itemId == R.id.nav_scan) {
+                Toast.makeText(this, "Scan (coming soon)", Toast.LENGTH_SHORT).show();
+                return true;
+            } else if (itemId == R.id.nav_profile) {
+                Intent intent = new Intent(UserHistoryActivity.this, UserProfileActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                startActivity(intent);
+                overridePendingTransition(0, 0);
                 finish();
                 return true;
             }
-            if (itemId == R.id.nav_scan) {
-                Toast.makeText(this, "Scan (coming soon)", Toast.LENGTH_SHORT).show();
-                return true;
-            }
-            if (itemId == R.id.nav_profile) {
-                startActivity(new Intent(this, UserProfileActivity.class));
-                return true;
-            }
-            return true;
-        });
 
-        loadHistory();
+            return false;
+        });
     }
 
     @Override
