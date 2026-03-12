@@ -2,12 +2,15 @@ package com.example.wecookproject;
 
 import android.app.AlertDialog;
 import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -20,16 +23,19 @@ import com.example.wecookproject.model.Event;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class UserEventActivity extends AppCompatActivity {
 
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
-    private final List<UserEventItem> eventList = new ArrayList<>();
+    private final List<UserEventRecord> eventList = new ArrayList<>();
 
     private RecyclerView rvEvents;
     private TextView tvEmptyState;
@@ -53,13 +59,13 @@ public class UserEventActivity extends AppCompatActivity {
         rvEvents.setAdapter(eventAdapter);
 
         setupBottomNav();
-        loadEvents();
+        loadEventsAndHistory();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        loadEvents();
+        loadEventsAndHistory();
     }
 
     private void setupBottomNav() {
@@ -74,7 +80,11 @@ public class UserEventActivity extends AppCompatActivity {
                 Toast.makeText(this, "Scan (coming soon)", Toast.LENGTH_SHORT).show();
                 return true;
             } else if (itemId == R.id.nav_history) {
-                Toast.makeText(this, "History (coming soon)", Toast.LENGTH_SHORT).show();
+                Intent intent = new Intent(UserEventActivity.this, UserHistoryActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                startActivity(intent);
+                overridePendingTransition(0, 0);
+                finish();
                 return true;
             } else if (itemId == R.id.nav_profile) {
                 Intent intent = new Intent(UserEventActivity.this, UserProfileActivity.class);
@@ -89,44 +99,56 @@ public class UserEventActivity extends AppCompatActivity {
         });
     }
 
-    private void loadEvents() {
+
+    private void loadEventsAndHistory() {
+        db.collection("users")
+                .document(entrantId)
+                .collection("eventHistory")
+                .get()
+                .addOnSuccessListener(historySnapshots -> {
+                    Map<String, String> historyStatuses = new HashMap<>();
+                    for (QueryDocumentSnapshot historyDocument : historySnapshots) {
+                        String eventId = historyDocument.getString("eventId");
+                        String status = historyDocument.getString("status");
+                        if (eventId != null && status != null) {
+                            historyStatuses.put(eventId, status);
+                        }
+                    }
+                    loadEvents(historyStatuses);
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "Failed to load history", Toast.LENGTH_SHORT).show();
+                    loadEvents(new HashMap<>());
+                });
+    }
+
+    private void loadEvents(Map<String, String> historyStatuses) {
         db.collection("events")
                 .get()
-                .addOnCompleteListener(task -> {
-                    if (!task.isSuccessful()) {
-                        Toast.makeText(this, "Failed to load events", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-
+                .addOnSuccessListener(eventSnapshots -> {
                     eventList.clear();
-                    for (QueryDocumentSnapshot document : task.getResult()) {
-                        Event event = document.toObject(Event.class);
-                        if (event == null) {
-                            continue;
-                        }
-
-                        List<String> waitlistEntrants = getWaitlistEntrants(document);
+                    for (QueryDocumentSnapshot document : eventSnapshots) {
                         if (!document.contains("waitlistEntrantIds")) {
                             initializeWaitingList(document.getReference());
                         }
 
-                        eventList.add(new UserEventItem(
-                                document.getId(),
-                                valueOrDefault(event.getEventName(), "Unnamed Event"),
-                                valueOrDefault(event.getLocation(), "Location TBD"),
-                                valueOrDefault(event.getRegistrationPeriod(), "No registration period"),
-                                valueOrDefault(event.getOrganizerId(), "Unknown Organizer"),
-                                valueOrDefault(event.getEnrollmentCriteria(), "Open to all"),
-                                valueOrDefault(event.getLotteryMethodology(), "System generates"),
-                                valueOrDefault(event.getDescription(), "No event description available."),
-                                event.getMaxWaitlist(),
-                                waitlistEntrants
-                        ));
+                        UserEventRecord eventRecord = UserEventRecord.fromEventSnapshot(
+                                document,
+                                entrantId,
+                                historyStatuses.get(document.getId())
+                        );
+
+                        if (eventRecord.isEntrantOnWaitlist() && historyStatuses.get(document.getId()) == null) {
+                            upsertHistoryDocument(eventRecord, UserEventRecord.STATUS_WAITLISTED);
+                        }
+
+                        eventList.add(eventRecord);
                     }
 
                     eventAdapter.notifyDataSetChanged();
                     updateEmptyState();
-                });
+                })
+                .addOnFailureListener(e -> Toast.makeText(this, "Failed to load events", Toast.LENGTH_SHORT).show());
     }
 
     private void initializeWaitingList(DocumentReference eventReference) {
@@ -134,15 +156,6 @@ public class UserEventActivity extends AppCompatActivity {
                 "waitlistEntrantIds", new ArrayList<String>(),
                 "currentWaitlistCount", 0
         );
-    }
-
-    private List<String> getWaitlistEntrants(DocumentSnapshot snapshot) {
-        @SuppressWarnings("unchecked")
-        List<String> waitlistEntrants = (List<String>) snapshot.get("waitlistEntrantIds");
-        if (waitlistEntrants == null) {
-            return new ArrayList<>();
-        }
-        return new ArrayList<>(waitlistEntrants);
     }
 
     private void updateEmptyState() {
@@ -155,60 +168,152 @@ public class UserEventActivity extends AppCompatActivity {
         }
     }
 
-    private void showEventDetailsDialog(UserEventItem eventItem) {
+    private void showEventDetailsDialog(UserEventRecord eventRecord) {
         View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_user_event_details, null, false);
 
-        TextView tvEventName = dialogView.findViewById(R.id.tv_dialog_event_name);
-        TextView tvLocation = dialogView.findViewById(R.id.tv_dialog_location);
-        TextView tvRegistration = dialogView.findViewById(R.id.tv_dialog_registration);
-        TextView tvOrganizer = dialogView.findViewById(R.id.tv_dialog_organizer);
+        TextView tvAvatar = dialogView.findViewById(R.id.tv_dialog_avatar);
+        TextView tvHeaderName = dialogView.findViewById(R.id.tv_dialog_event_name);
+        TextView tvHeaderLocation = dialogView.findViewById(R.id.tv_dialog_location);
+        Button btnShowQr = dialogView.findViewById(R.id.btn_dialog_show_qr);
+        ImageView ivPoster = dialogView.findViewById(R.id.iv_dialog_poster);
+        TextView tvDetailName = dialogView.findViewById(R.id.tv_dialog_name_detail);
+        TextView tvDateRange = dialogView.findViewById(R.id.tv_dialog_date_range);
         TextView tvWaitlist = dialogView.findViewById(R.id.tv_dialog_waitlist);
+        TextView tvStatusChip = dialogView.findViewById(R.id.tv_dialog_status_chip);
         TextView tvDescription = dialogView.findViewById(R.id.tv_dialog_description);
-        Button btnJoin = dialogView.findViewById(R.id.btn_join_waitlist);
-        Button btnClose = dialogView.findViewById(R.id.btn_close_dialog);
+        Button btnSecondary = dialogView.findViewById(R.id.btn_dialog_secondary);
+        Button btnPrimary = dialogView.findViewById(R.id.btn_dialog_primary);
 
-        tvEventName.setText(eventItem.eventName);
-        tvLocation.setText("Location: " + eventItem.location);
-        tvRegistration.setText("Registration: " + eventItem.registrationPeriod);
-        tvOrganizer.setText("Organizer: " + abbreviateOrganizer(eventItem.organizerId));
-        tvWaitlist.setText(getWaitlistSummary(eventItem));
-        tvDescription.setText(
-                "Enrollment: " + eventItem.enrollmentCriteria + "\n"
-                        + "Methodology: " + eventItem.lotteryMethodology + "\n"
-                        + eventItem.description
-        );
+        tvAvatar.setText(UserEventUiUtils.getAvatarLetter(eventRecord.getEventName()));
+        tvHeaderName.setText(eventRecord.getEventName());
+        tvHeaderLocation.setText(eventRecord.getLocation());
+        tvDetailName.setText(eventRecord.getEventName());
+        tvDateRange.setText(UserEventUiUtils.formatDateRange(eventRecord.getRegistrationStartDate(), eventRecord.getRegistrationEndDate()));
+        tvWaitlist.setText(UserEventUiUtils.formatWaitlistSummary(eventRecord));
+        tvDescription.setText(UserEventUiUtils.buildDescription(eventRecord));
+        PosterLoader.loadInto(ivPoster, eventRecord.getPosterPath());
+
+        String status = eventRecord.getEffectiveStatus();
+        if (status.isEmpty()) {
+            tvStatusChip.setVisibility(View.GONE);
+        } else {
+            tvStatusChip.setVisibility(View.VISIBLE);
+            UserEventUiUtils.applyStatusChip(tvStatusChip, status, true);
+        }
 
         AlertDialog dialog = new AlertDialog.Builder(this)
                 .setView(dialogView)
                 .create();
 
-        bindJoinButton(btnJoin, eventItem);
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        }
 
-        btnJoin.setOnClickListener(v -> joinWaitingList(eventItem, btnJoin, tvWaitlist));
-        btnClose.setOnClickListener(v -> dialog.dismiss());
+        dialog.setCanceledOnTouchOutside(true);
 
+        btnShowQr.setOnClickListener(v ->
+                Toast.makeText(this, "QR code preview coming soon", Toast.LENGTH_SHORT).show());
+
+        configureDialogActions(dialog, eventRecord, btnPrimary, btnSecondary);
         dialog.show();
     }
 
-    private void bindJoinButton(Button button, UserEventItem eventItem) {
-        if (eventItem.waitlistEntrants.contains(entrantId)) {
-            button.setEnabled(false);
-            button.setText("Already Joined");
+    private void configureDialogActions(AlertDialog dialog,
+                                        UserEventRecord eventRecord,
+                                        Button btnPrimary,
+                                        Button btnSecondary) {
+        String status = eventRecord.getEffectiveStatus();
+        btnSecondary.setVisibility(View.GONE);
+        btnPrimary.setEnabled(true);
+
+        if (UserEventRecord.STATUS_INVITED.equals(status)) {
+            btnSecondary.setVisibility(View.VISIBLE);
+            btnSecondary.setText("Decline");
+            btnPrimary.setText("Accept");
+            btnSecondary.setOnClickListener(v -> declineInvitation(eventRecord, dialog));
+            btnPrimary.setOnClickListener(v -> acceptInvitation(eventRecord, dialog));
             return;
         }
 
-        if (eventItem.maxWaitlist <= 0 || eventItem.waitlistEntrants.size() >= eventItem.maxWaitlist) {
-            button.setEnabled(false);
-            button.setText("Waitlist Full");
+        if (UserEventRecord.STATUS_ACCEPTED.equals(status)) {
+            btnPrimary.setText("Accepted");
+            btnPrimary.setEnabled(false);
             return;
         }
 
-        button.setEnabled(true);
-        button.setText("Join the waiting list");
+        if (UserEventRecord.STATUS_REJECTED.equals(status)) {
+            btnPrimary.setText("Rejected");
+            btnPrimary.setEnabled(false);
+            return;
+        }
+
+        if (UserEventRecord.STATUS_WAITLISTED.equals(status)) {
+            btnPrimary.setText("Leave Waitlist");
+            btnPrimary.setOnClickListener(v -> leaveWaitlist(eventRecord, dialog));
+            return;
+        }
+
+        if (eventRecord.isWaitlistFull()) {
+            btnPrimary.setText("Waitlist Full");
+            btnPrimary.setEnabled(false);
+            return;
+        }
+
+        btnPrimary.setText("Join the Waitlist");
+        btnPrimary.setOnClickListener(v -> joinWaitingList(eventRecord, dialog));
     }
 
-    private void joinWaitingList(UserEventItem eventItem, Button btnJoin, TextView tvWaitlist) {
-        DocumentReference eventReference = db.collection("events").document(eventItem.eventId);
+    private void joinWaitingList(UserEventRecord eventRecord, AlertDialog dialog) {
+        updateWaitlistMembership(
+                eventRecord,
+                true,
+                UserEventRecord.STATUS_WAITLISTED,
+                false,
+                "Joined waiting list successfully",
+                dialog
+        );
+    }
+
+    private void leaveWaitlist(UserEventRecord eventRecord, AlertDialog dialog) {
+        updateWaitlistMembership(
+                eventRecord,
+                false,
+                null,
+                true,
+                "Left waiting list",
+                dialog
+        );
+    }
+
+    private void acceptInvitation(UserEventRecord eventRecord, AlertDialog dialog) {
+        updateWaitlistMembership(
+                eventRecord,
+                false,
+                UserEventRecord.STATUS_ACCEPTED,
+                false,
+                "Invitation accepted",
+                dialog
+        );
+    }
+
+    private void declineInvitation(UserEventRecord eventRecord, AlertDialog dialog) {
+        updateWaitlistMembership(
+                eventRecord,
+                false,
+                UserEventRecord.STATUS_REJECTED,
+                false,
+                "Invitation declined",
+                dialog
+        );
+    }
+
+    private void updateWaitlistMembership(UserEventRecord eventRecord,
+                                          boolean addEntrant,
+                                          String newStatus,
+                                          boolean deleteHistory,
+                                          String successMessage,
+                                          AlertDialog dialog) {
+        DocumentReference eventReference = db.collection("events").document(eventRecord.getEventId());
 
         db.runTransaction(transaction -> {
             DocumentSnapshot snapshot = transaction.get(eventReference);
@@ -227,97 +332,80 @@ public class UserEventActivity extends AppCompatActivity {
             Long maxWaitlistValue = snapshot.getLong("maxWaitlist");
             int maxWaitlist = maxWaitlistValue == null ? 0 : maxWaitlistValue.intValue();
 
-            if (waitlistEntrants.contains(entrantId)) {
-                throw new IllegalStateException("You have already joined this waiting list");
+            if (addEntrant) {
+                if (waitlistEntrants.contains(entrantId)) {
+                    throw new IllegalStateException("You already joined this waiting list");
+                }
+                if (maxWaitlist > 0 && waitlistEntrants.size() >= maxWaitlist) {
+                    throw new IllegalStateException("This waiting list is full");
+                }
+                waitlistEntrants.add(entrantId);
+            } else {
+                waitlistEntrants.remove(entrantId);
             }
 
-            if (maxWaitlist <= 0 || waitlistEntrants.size() >= maxWaitlist) {
-                throw new IllegalStateException("This waiting list is full");
-            }
-
-            waitlistEntrants.add(entrantId);
             transaction.update(eventReference,
                     "waitlistEntrantIds", waitlistEntrants,
                     "currentWaitlistCount", waitlistEntrants.size());
             return waitlistEntrants;
         }).addOnSuccessListener(updatedWaitlist -> {
-            eventItem.waitlistEntrants = new ArrayList<>(updatedWaitlist);
+            eventRecord.setWaitlistEntrantIds(new ArrayList<>(updatedWaitlist));
+            if (deleteHistory) {
+                deleteHistoryDocument(eventRecord.getEventId());
+                eventRecord.setHistoryStatus("");
+            } else if (newStatus != null) {
+                eventRecord.setHistoryStatus(newStatus);
+                upsertHistoryDocument(eventRecord, newStatus);
+            }
+
             eventAdapter.notifyDataSetChanged();
-            tvWaitlist.setText(getWaitlistSummary(eventItem));
-            bindJoinButton(btnJoin, eventItem);
-            Toast.makeText(this, "Joined waiting list successfully", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, successMessage, Toast.LENGTH_SHORT).show();
+            dialog.dismiss();
+            loadEventsAndHistory();
         }).addOnFailureListener(e -> {
             String message = e.getMessage();
             if (message == null || message.trim().isEmpty()) {
-                message = "Unable to join the waiting list";
+                message = "Unable to update event status";
             }
             Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
         });
     }
 
-    private String getWaitlistSummary(UserEventItem eventItem) {
-        int currentCount = eventItem.waitlistEntrants.size();
-        int maxCapacity = eventItem.maxWaitlist;
-        
-        if (maxCapacity <= 0) {
-            return "Current Waitlist: " + currentCount + " (No limit)";
-        } else {
-            return "Current Waitlist: " + currentCount + "/" + maxCapacity;
-        }
+    private void upsertHistoryDocument(UserEventRecord eventRecord, String status) {
+        Map<String, Object> historyData = new HashMap<>();
+        historyData.put("eventId", eventRecord.getEventId());
+        historyData.put("eventName", eventRecord.getEventName());
+        historyData.put("location", eventRecord.getLocation());
+        historyData.put("organizerId", eventRecord.getOrganizerId());
+        historyData.put("posterPath", eventRecord.getPosterPath());
+        historyData.put("registrationStartDate", eventRecord.getRegistrationStartDate());
+        historyData.put("registrationEndDate", eventRecord.getRegistrationEndDate());
+        historyData.put("description", eventRecord.getDescription());
+        historyData.put("enrollmentCriteria", eventRecord.getEnrollmentCriteria());
+        historyData.put("lotteryMethodology", eventRecord.getLotteryMethodology());
+        historyData.put("status", status);
+        historyData.put("updatedAt", FieldValue.serverTimestamp());
+
+        db.collection("users")
+                .document(entrantId)
+                .collection("eventHistory")
+                .document(eventRecord.getEventId())
+                .set(historyData);
     }
 
-    private String abbreviateOrganizer(String organizerId) {
-        if (organizerId == null || organizerId.isEmpty()) {
-            return "Unknown";
-        }
-        int endIndex = Math.min(organizerId.length(), 5);
-        return organizerId.substring(0, endIndex) + "...";
-    }
-
-    private String valueOrDefault(String value, String fallback) {
-        return value == null || value.trim().isEmpty() ? fallback : value;
-    }
-
-    private static class UserEventItem {
-        private final String eventId;
-        private final String eventName;
-        private final String location;
-        private final String registrationPeriod;
-        private final String organizerId;
-        private final String enrollmentCriteria;
-        private final String lotteryMethodology;
-        private final String description;
-        private final int maxWaitlist;
-        private List<String> waitlistEntrants;
-
-        private UserEventItem(String eventId,
-                              String eventName,
-                              String location,
-                              String registrationPeriod,
-                              String organizerId,
-                              String enrollmentCriteria,
-                              String lotteryMethodology,
-                              String description,
-                              int maxWaitlist,
-                              List<String> waitlistEntrants) {
-            this.eventId = eventId;
-            this.eventName = eventName;
-            this.location = location;
-            this.registrationPeriod = registrationPeriod;
-            this.organizerId = organizerId;
-            this.enrollmentCriteria = enrollmentCriteria;
-            this.lotteryMethodology = lotteryMethodology;
-            this.description = description;
-            this.maxWaitlist = maxWaitlist;
-            this.waitlistEntrants = waitlistEntrants;
-        }
+    private void deleteHistoryDocument(String eventId) {
+        db.collection("users")
+                .document(entrantId)
+                .collection("eventHistory")
+                .document(eventId)
+                .delete();
     }
 
     private static class UserEventAdapter extends RecyclerView.Adapter<UserEventAdapter.UserEventViewHolder> {
-        private final List<UserEventItem> eventItems;
+        private final List<UserEventRecord> eventItems;
         private final OnEventClickListener listener;
 
-        private UserEventAdapter(List<UserEventItem> eventItems, OnEventClickListener listener) {
+        private UserEventAdapter(List<UserEventRecord> eventItems, OnEventClickListener listener) {
             this.eventItems = eventItems;
             this.listener = listener;
         }
@@ -331,11 +419,19 @@ public class UserEventActivity extends AppCompatActivity {
 
         @Override
         public void onBindViewHolder(@NonNull UserEventViewHolder holder, int position) {
-            UserEventItem eventItem = eventItems.get(position);
-            holder.tvEventName.setText(eventItem.eventName);
-            holder.tvEventStatus.setText(
-                    "Waitlist " + eventItem.waitlistEntrants.size() + "/" + eventItem.maxWaitlist
-            );
+            UserEventRecord eventItem = eventItems.get(position);
+            holder.tvEventName.setText(eventItem.getEventName());
+
+            if (eventItem.getEffectiveStatus().isEmpty()) {
+                UserEventUiUtils.applyStatusChip(
+                        holder.tvEventStatus,
+                        eventItem.isWaitlistFull() ? UserEventUiUtils.STATUS_FULL : UserEventUiUtils.STATUS_OPEN,
+                        false
+                );
+            } else {
+                UserEventUiUtils.applyStatusChip(holder.tvEventStatus, eventItem.getEffectiveStatus(), false);
+            }
+
             holder.itemView.setOnClickListener(v -> listener.onEventClick(eventItem));
         }
 
@@ -357,6 +453,6 @@ public class UserEventActivity extends AppCompatActivity {
     }
 
     private interface OnEventClickListener {
-        void onEventClick(UserEventItem eventItem);
+        void onEventClick(UserEventRecord eventRecord);
     }
 }

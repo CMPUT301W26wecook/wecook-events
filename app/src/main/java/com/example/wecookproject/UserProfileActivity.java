@@ -88,8 +88,10 @@ public class UserProfileActivity extends AppCompatActivity {
             notificationsEnabled = !notificationsEnabled;
 
             if (notificationsEnabled) {
+                ivNotifications.setImageResource(R.drawable.ic_notifications);
                 Toast.makeText(this, "Notifications ON", Toast.LENGTH_SHORT).show();
             } else {
+                ivNotifications.setImageResource(R.drawable.ic_notifications_off);
                 Toast.makeText(this, "Notifications OFF", Toast.LENGTH_SHORT).show();
             }
         });
@@ -112,7 +114,11 @@ public class UserProfileActivity extends AppCompatActivity {
                 Toast.makeText(this, "Scan (coming soon)", Toast.LENGTH_SHORT).show();
                 return true;
             } else if (id == R.id.nav_history) {
-                Toast.makeText(this, "History (coming soon)", Toast.LENGTH_SHORT).show();
+                Intent intent = new Intent(UserProfileActivity.this, UserHistoryActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                startActivity(intent);
+                overridePendingTransition(0, 0);
+                finish();
                 return true;
             } else if (id == R.id.nav_profile) {
                 return true;
