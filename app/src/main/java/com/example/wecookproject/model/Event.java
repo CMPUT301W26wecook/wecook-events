@@ -19,7 +19,7 @@ public class Event {
     private String location; // As seen in details "Edmonton"
     private String description;
 
-    private String posterPath;
+    private String posterUrl;
     private String qrCodePath;
     private List<String> waitlistEntrantIds = new ArrayList<>();
     private List<String> selectedEntrantIds = new ArrayList<>();
@@ -143,12 +143,21 @@ public class Event {
         this.description = description;
     }
 
+    public String getPosterUrl() {
+        return posterUrl;
+    }
+
+    public void setPosterUrl(String posterUrl) {
+        this.posterUrl = posterUrl;
+    }
+
+    // Legacy compatibility with older call sites/data model naming.
     public String getPosterPath() {
-        return posterPath;
+        return posterUrl;
     }
 
     public void setPosterPath(String posterPath) {
-        this.posterPath = posterPath;
+        this.posterUrl = posterPath;
     }
 
     public String getQrCodePath() {
