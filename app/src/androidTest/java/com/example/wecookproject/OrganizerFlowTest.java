@@ -56,6 +56,40 @@ import java.util.concurrent.atomic.AtomicReference;
 @RunWith(AndroidJUnit4.class)
 @LargeTest
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
+/**
+ * End-to-end instrumentation tests for the organizer-part application flow. This class
+ * exercises the main organizer journey across login/signup routing, profile access, event
+ * creation, event-detail navigation, event editing, and lottery behavior while verifying the
+ * expected UI state and Firestore side effects for each scenario.
+ *
+ * Test case summary:
+ * - `test1_OrganizerLoginWithoutExistingUserRoutesToSignup`: verifies that organizer login routes
+ *   a device without an existing user record to the signup details screen.
+ * - `test2_OrganizerProfileMandatoryNamesBlockUpdate`: verifies that profile updates are blocked
+ *   when required organizer name fields are left blank.
+ * - `test3_CreateEventWithoutNameIsBlocked`: verifies that event creation is blocked when the
+ *   required event name is missing.
+ * - `test4_BottomNavSwitchesBetweenTabs`: verifies that organizer bottom navigation switches
+ *   correctly between events, create-event, and profile screens.
+ * - `test5_OrganizerProfileUpdateWithValidNames`: verifies that entering valid profile names and
+ *   tapping update keeps the organizer on the profile screen without error.
+ * - `test6_NotificationScreenIsReachableAndShowsHintField`: verifies that the organizer
+ *   notification screen opens and shows its message input field.
+ * - `test7_CreateEventAndVerifyInList`: verifies that submitting a valid create-event form returns
+ *   the organizer to the home screen after the event is saved.
+ * - `test8_EventDetailsScreenDisplaysCorrectly`: verifies that the event-details screen loads the
+ *   expected core UI elements for a valid event.
+ * - `test9_EditEventLaunchWithoutIdFinishesActivity`: verifies that the edit-event screen exits
+ *   immediately when launched without a required event ID.
+ * - `test10_EditEventUpdateSingleFieldUpdatesFirestore`: verifies that editing only the event name
+ *   updates that field in Firestore without changing unrelated event fields.
+ * - `test11_LotteryAvailableOnlyAfterRegistrationEnds`: verifies that a lottery draw after
+ *   registration closes selects the requested number of entrants and saves them to Firestore.
+ *
+ * Outstanding issues:
+ * - Several tests interact with real Firestore state, so failures can be influenced by network,
+ *   emulator timing, or shared backend conditions.
+ */
 public class OrganizerFlowTest {
 
     // Sleep durations (ms) generous enough for Firestore + UI transitions on CI/emulator
@@ -175,7 +209,8 @@ public class OrganizerFlowTest {
     }
 
     /**
-     * test4: Bottom navigation bar correctly switches among the three organizer
+     * test4: Bottom navigation should switch correctly among the organizer Events,
+     * Create Event, and Profile tabs.
      */
     @Test
     public void test4_BottomNavSwitchesBetweenTabs() {
@@ -391,9 +426,8 @@ public class OrganizerFlowTest {
     }
 
     /**
-     * test11: Lottery with entrants should select winners and update the event status.
-     * This test creates an event with entrants on the waitlist, performs lottery,
-     * and verifies that winners are selected.
+     * test11: Running a lottery after registration has ended should select the requested
+     * number of winners from the waitlist and persist them to Firestore.
      */
     @Test
     public void test11_LotteryAvailableOnlyAfterRegistrationEnds() throws InterruptedException {
@@ -475,9 +509,8 @@ public class OrganizerFlowTest {
     }
 
     /**
-     * Drives the full organizer signup flow that is launched from LoginActivity
-     * (Details screen Address screen) and waits until OrganizerHomeActivity
-     * is visible.
+     * Drives the full organizer signup flow launched from LoginActivity, progressing through the
+     * Details and Address screens until OrganizerHomeActivity becomes visible.
      */
     private void performFullSignup() {
         // LoginActivity was already launched by setUp()

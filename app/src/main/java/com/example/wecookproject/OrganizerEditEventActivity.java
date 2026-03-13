@@ -30,6 +30,17 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
+/**
+ * Activity for organizers to edit an existing event's configurable details and optionally replace
+ * its poster image. Within the app it acts as the UI controller for the organizer edit-event flow,
+ * coordinating form input, validation, and Firebase persistence in a single screen.
+ *
+ * Outstanding issues:
+ * - Existing event fields are not preloaded into the form, so the screen currently behaves like a
+ *   partial-update form rather than a full edit view.
+ * - Firestore and Storage access are handled directly in the Activity, which tightly which puts
+ *   UI and data logic together instead of separating them through a repository or ViewModel-style layer.
+ */
 public class OrganizerEditEventActivity extends AppCompatActivity {
     private Date registrationStartDate;
     private Date registrationEndDate;

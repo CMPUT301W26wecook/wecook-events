@@ -24,6 +24,18 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.UUID;
 
+/**
+ * Activity for organizers to configure and create new events from a form-driven workflow. Within
+ * the app it acts as the UI controller for the organizer event-creation flow, validating input and
+ * persisting a new Event document directly to Firestore.
+ *
+ * Outstanding issues:
+ * - Creation relies on default placeholder values for fields such as location and description,
+ *   which leaves newly created events only partially configured.
+ * - Firestore writes and organizer-identity lookup are handled directly in the Activity, which
+ *   tightly couples UI and data logic instead of separating them through a repository or
+ *   ViewModel-style layer.
+ */
 public class OrganizerCreateEventActivity extends AppCompatActivity {
     private Date registrationStartDate;
     private Date registrationEndDate;
