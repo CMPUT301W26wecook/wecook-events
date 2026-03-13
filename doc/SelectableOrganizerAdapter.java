@@ -116,3 +116,4 @@ public class SelectableOrganizerAdapter extends RecyclerView.Adapter<SelectableO
         }
     }
 }
+

@@ -98,3 +98,4 @@ public class SelectableEventAdapter extends RecyclerView.Adapter<SelectableEvent
         }
     }
 }
+

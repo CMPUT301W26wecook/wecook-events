@@ -113,3 +113,4 @@ public class SelectableUserAdapter extends RecyclerView.Adapter<SelectableUserAd
         }
     }
 }
+
