@@ -65,7 +65,7 @@ public class AdminFlowTest {
         onView(withId(R.id.tv_last_name)).check(matches(withText(containsString("Test"))));
         onView(withId(R.id.tv_dob)).check(matches(withText(containsString("1995-05-05"))));
         onView(withId(R.id.tv_address1)).check(matches(withText(containsString("User Ave 1"))));
-        onView(withId(R.id.tv_address2)).check(matches(isDisplayed())); // Check visibility if it might be empty
+        onView(withId(R.id.tv_address2)).check(matches(isDisplayed()));
         onView(withId(R.id.tv_city)).check(matches(withText(containsString("Calgary"))));
         onView(withId(R.id.tv_postal_code)).check(matches(withText(containsString("T2P 2M5"))));
         onView(withId(R.id.tv_country)).check(matches(withText(containsString("Canada"))));
@@ -74,17 +74,14 @@ public class AdminFlowTest {
     private void cleanupTestData() {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
-        // Delete Test Organizers
         for (int i = 1; i <= 3; i++) {
             db.collection("users").document("test_org_" + i).delete();
         }
 
-        // Delete Test Entrants
         for (int i = 1; i <= 5; i++) {
             db.collection("users").document("test_user_" + i).delete();
         }
 
-        // Delete Test Events
         for (int i = 1; i <= 3; i++) {
             db.collection("events").document("test_event_" + i).delete();
         }
@@ -96,15 +93,16 @@ public class AdminFlowTest {
         for (int i = 1; i <= 3; i++) {
             String id = "test_org_" + i;
             User org = new User(
-                    "Organizer" + i,
-                    "Test",
-                    "1980-01-01",
                     "Org St " + i,
                     "",
-                    "Edmonton",
-                    "T6G 2R3",
-                    "Canada",
                     id,
+                    "1980-01-01",
+                    "Edmonton",
+                    "Canada",
+                    "Organizer" + i,
+                    "Test",
+                    "T6G 2R3",
+                    true,
                     "organizer"
             );
             db.collection("users").document(id).set(org.toFirestoreMap());
@@ -113,15 +111,16 @@ public class AdminFlowTest {
         for (int i = 1; i <= 5; i++) {
             String id = "test_user_" + i;
             User user = new User(
-                    "Entrant" + i,
-                    "Test",
-                    "1995-05-05",
                     "User Ave " + i,
                     "",
-                    "Calgary",
-                    "T2P 2M5",
-                    "Canada",
                     id,
+                    "1995-05-05",
+                    "Calgary",
+                    "Canada",
+                    "Entrant" + i,
+                    "Test",
+                    "T2P 2M5",
+                    true,
                     "entrant"
             );
             db.collection("users").document(id).set(user.toFirestoreMap());

@@ -47,8 +47,8 @@ public class AdminUserProfileFragment extends Fragment {
                 tvFirstName.setText("First Name: " + (user.getFirstName() != null ? user.getFirstName() : ""));
                 tvLastName.setText("Last Name: " + (user.getLastName() != null ? user.getLastName() : ""));
                 tvDob.setText("Birthday: " + (user.getBirthday() != null ? user.getBirthday() : ""));
-                tvAddress1.setText("Address1: " + (user.getAddress1() != null ? user.getAddress1() : ""));
-                tvAddress2.setText("Address2: " + (user.getAddress2() != null ? user.getAddress2() : ""));
+                tvAddress1.setText("Address Line 1: " + (user.getAddressLine1() != null ? user.getAddressLine1() : ""));
+                tvAddress2.setText("Address Line 2: " + (user.getAddressLine2() != null ? user.getAddressLine2() : ""));
                 tvCity.setText("City: " + (user.getCity() != null ? user.getCity() : ""));
                 tvPostalCode.setText("Postal Code: " + (user.getPostalCode() != null ? user.getPostalCode() : ""));
                 tvCountry.setText("Country: " + (user.getCountry() != null ? user.getCountry() : ""));
@@ -66,8 +66,8 @@ public class AdminUserProfileFragment extends Fragment {
                 tvFirstName.setText("First Name: Deleted");
                 tvLastName.setText("Last Name: User");
                 tvDob.setText("Birthday: ");
-                tvAddress1.setText("Address1: ");
-                tvAddress2.setText("Address2: ");
+                tvAddress1.setText("Address Line 1: ");
+                tvAddress2.setText("Address Line 2: ");
                 tvCity.setText("City: ");
                 tvPostalCode.setText("Postal Code: ");
                 tvCountry.setText("Country: ");
