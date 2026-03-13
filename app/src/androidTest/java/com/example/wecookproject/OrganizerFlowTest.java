@@ -138,7 +138,7 @@ public class OrganizerFlowTest {
 
     /**
      * test2: Tapping "Update Info" with both First Name and Last Name blank should
-     * keep the organizer on the Profile screen 鈥?both fields are mandatory.
+     * keep the organizer on the Profile screen both fields are mandatory.
      */
     @Test
     public void test2_OrganizerProfileMandatoryNamesBlockUpdate() {
@@ -184,7 +184,7 @@ public class OrganizerFlowTest {
         ActivityScenario<OrganizerHomeActivity> homeScenario =
                 ActivityScenario.launch(OrganizerHomeActivity.class);
 
-        // Home 鈫?Create Events
+        // Home Create Events
         onView(withId(R.id.nav_create_events)).perform(click());
         safeSleep(WAIT_SHORT);
         onView(withId(R.id.btn_create_event)).check(matches(isDisplayed()));
