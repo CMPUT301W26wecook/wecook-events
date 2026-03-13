@@ -7,8 +7,16 @@ import android.widget.EditText;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
+/**
+ * This activity handles the login process for administrators.
+ */
 public class AdminLoginActivity extends AppCompatActivity {
 
+    /**
+     * Initializes the activity, sets up the UI components, and handles the login button click event.
+     * 
+     * @param savedInstanceState Saved state of the activity
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

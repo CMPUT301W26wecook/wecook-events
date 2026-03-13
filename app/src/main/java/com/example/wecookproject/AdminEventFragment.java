@@ -21,6 +21,10 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Fragment for the Administrator to browse and manage the list of all events in the system.
+ * It also provides functionality to view event details and delete multiple events.
+ */
 public class AdminEventFragment extends Fragment {
 
     private RecyclerView recyclerView;
@@ -29,6 +33,16 @@ public class AdminEventFragment extends Fragment {
     private FirebaseFirestore db;
     private AdminViewModel viewModel;
 
+    /**
+     * Let fragment show Event List UI
+     * It initializes the RecyclerView, adapter,
+     * and setup event listeners for the menu actions and Event deletion.
+     *
+     * @param inflater           Parent view to which the fragment's UI should be attached.
+     * @param container          Parent view for the fragment's UI.
+     * @param savedInstanceState Saved state of the fragment.
+     * @return The View for the Event List UI.
+     */
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -82,6 +96,9 @@ public class AdminEventFragment extends Fragment {
         return view;
     }
 
+    /**
+     * Get list of Events from Firebase.
+     */
     private void loadEventsFromFirestore() {
         db.collection("events")
                 .addSnapshotListener((value, error) -> {

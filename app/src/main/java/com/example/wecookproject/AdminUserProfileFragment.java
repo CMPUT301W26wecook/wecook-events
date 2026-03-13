@@ -15,18 +15,34 @@ import androidx.lifecycle.ViewModelProvider;
 import com.example.wecookproject.model.User;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+/**
+ * A Fragment that displays the profile of a specific User for administrative purposes.
+ */
 public class AdminUserProfileFragment extends Fragment {
     
     private User user;
     private AdminViewModel viewModel;
     private FirebaseFirestore db = FirebaseFirestore.getInstance();
 
+    /**
+     * Initializes the fragment and retrieves the shared AdminViewModel.
+     * 
+     * @param savedInstanceState Saved state of the fragment
+     */
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         viewModel = new ViewModelProvider(requireActivity()).get(AdminViewModel.class);
     }
 
+    /**
+     * Show User Profile UI and handles Admin interactions for cleaning profile information.
+     *
+     * @param inflater           Parent view to which the fragment's UI should be attached.
+     * @param container          Parent view for the fragment's UI.
+     * @param savedInstanceState Saved state of the fragment.
+     * @return The View for the User Profile UI.
+     */
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
