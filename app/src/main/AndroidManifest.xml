@@ -64,9 +64,7 @@
         <activity
             android:name=".OrganizerEntrantListActivity"
             android:exported="false" />
-        <activity
-            android:name=".AdminEvent"
-            android:exported="false" />
+        
     </application>
 
 </manifest>
