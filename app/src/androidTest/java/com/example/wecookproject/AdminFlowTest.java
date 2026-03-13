@@ -272,10 +272,8 @@ public class AdminFlowTest {
                     "Test Event " + i,
                     new Date(),
                     new Date(System.currentTimeMillis() + 604800000L),
-                    "Open to all",
                     50,
                     10,
-                    "System generates",
                     false,
                     "Sample Location",
                     "This is a sample description for test event " + i
