@@ -50,6 +50,12 @@ public class OrganizerEntrantListActivity extends AppCompatActivity {
     private final List<String> selectedEntrantIds = new ArrayList<>();
     private Date registrationEndDate;
 
+    /**
+     * Initializes the organizer waitlist screen and loads entrant data for the selected event.
+     *
+     * @param savedInstanceState the previously saved instance state, or {@code null} when the
+     *                           activity is created for the first time
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -81,6 +87,11 @@ public class OrganizerEntrantListActivity extends AppCompatActivity {
         loadWaitlist();
     }
 
+    /**
+     * Configures the organizer bottom navigation for the waitlist screen.
+     *
+     * @return no value
+     */
     private void setupBottomNav() {
         BottomNavigationView bottomNav = findViewById(R.id.bottom_nav);
         bottomNav.setSelectedItemId(R.id.nav_events);
@@ -103,14 +114,31 @@ public class OrganizerEntrantListActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Configures search callbacks for filtering the displayed entrant list.
+     *
+     * @return no value
+     */
     private void setupSearch() {
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            /**
+             * Applies the current search query when the organizer submits it.
+             *
+             * @param query the submitted search text
+             * @return {@code true} to indicate that the submission was handled
+             */
             @Override
             public boolean onQueryTextSubmit(String query) {
                 applyFilter(query);
                 return true;
             }
 
+            /**
+             * Updates the visible waitlist rows while the organizer edits the search query.
+             *
+             * @param newText the updated search text
+             * @return {@code true} to indicate that the text change was handled
+             */
             @Override
             public boolean onQueryTextChange(String newText) {
                 applyFilter(newText);
@@ -119,28 +147,44 @@ public class OrganizerEntrantListActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Wires the organizer action buttons shown beneath the entrant list.
+     *
+     * @return no value
+     */
     private void setupActionButtons() {
         actionButtons.setVisibility(View.VISIBLE);
 
+        // Reserved for sending invitations to selected entrants once that feature is implemented.
         findViewById(R.id.btn_send_invitation_to_selected).setOnClickListener(v -> {
             Toast.makeText(this, "Invitations are not available yet", Toast.LENGTH_SHORT).show();
         });
+        // Opens the organizer notification screen for sending a broadcast message.
         findViewById(R.id.btn_send_notification_to_all).setOnClickListener(v ->
             startActivity(new Intent(this, OrganizerNotificationActivity.class)));
+        // Reserved for opening the invited entrants view once that feature is implemented.
         findViewById(R.id.btn_view_invited).setOnClickListener(v -> {
             Toast.makeText(this, "Invited list is not available yet", Toast.LENGTH_SHORT).show();
         });
+        // Starts the lottery draw using the number entered by the organizer.
         findViewById(R.id.btn_lottery_draw).setOnClickListener(v -> {
             performLotteryDraw();
         });
+        // Reserved for rerunning the lottery once redraw support is implemented.
         findViewById(R.id.btn_redraw_entrants).setOnClickListener(v -> {
             Toast.makeText(this, "Redraw is not available yet", Toast.LENGTH_SHORT).show();
         });
+        // Reserved for bulk deletion of selected entrants once that feature is implemented.
         findViewById(R.id.btn_delete_all_selected).setOnClickListener(v -> {
             Toast.makeText(this, "Bulk delete is not available yet", Toast.LENGTH_SHORT).show();
         });
     }
 
+    /**
+     * Loads the selected event document and extracts the waitlist-related data needed by the screen.
+     *
+     * @return no value
+     */
     private void loadWaitlist() {
         db.collection("events").document(eventId).get()
                 .addOnSuccessListener(documentSnapshot -> {
@@ -183,6 +227,12 @@ public class OrganizerEntrantListActivity extends AppCompatActivity {
                 });
     }
 
+    /**
+     * Reads the waitlist entrant identifiers from an event document.
+     *
+     * @param documentSnapshot the event document snapshot containing waitlist data
+     * @return the list of entrant identifiers currently on the waitlist
+     */
     private List<String> readEntrantIds(DocumentSnapshot documentSnapshot) {
         List<String> entrantIds = new ArrayList<>();
         Object rawWaitlist = documentSnapshot.get("waitlistEntrantIds");
@@ -196,6 +246,12 @@ public class OrganizerEntrantListActivity extends AppCompatActivity {
         return entrantIds;
     }
 
+    /**
+     * Loads organizer-facing entrant profile rows for the provided waitlist identifiers.
+     *
+     * @param entrantIds the entrant identifiers whose profiles should be loaded
+     * @return no value
+     */
     private void loadEntrantProfiles(List<String> entrantIds) {
         if (entrantIds.isEmpty()) {
             allEntrants.clear();
@@ -232,6 +288,12 @@ public class OrganizerEntrantListActivity extends AppCompatActivity {
                 });
     }
 
+    /**
+     * Filters the loaded entrant list using the current organizer search query.
+     *
+     * @param query the text used to filter the organizer waitlist rows
+     * @return no value
+     */
     private void applyFilter(String query) {
         String normalizedQuery = query == null ? "" : query.trim().toLowerCase();
         List<OrganizerWaitlistItem> filteredEntrants = new ArrayList<>();
@@ -246,11 +308,22 @@ public class OrganizerEntrantListActivity extends AppCompatActivity {
         showEmptyState(filteredEntrants.isEmpty());
     }
 
+    /**
+     * Toggles the empty-state message and waitlist recycler visibility.
+     *
+     * @param show {@code true} to show the empty state; {@code false} to show the entrant list
+     * @return no value
+     */
     private void showEmptyState(boolean show) {
         emptyStateView.setVisibility(show ? View.VISIBLE : View.GONE);
         entrantsRecyclerView.setVisibility(show ? View.GONE : View.VISIBLE);
     }
 
+    /**
+     * Performs a random lottery draw from the current event waitlist and stores the result.
+     *
+     * @return no value
+     */
     private void performLotteryDraw() {
         // Check if lottery is available (only after registration ends)
         if (registrationEndDate == null) {

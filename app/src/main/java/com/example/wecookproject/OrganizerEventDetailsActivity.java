@@ -35,6 +35,12 @@ public class OrganizerEventDetailsActivity extends AppCompatActivity {
     private SwitchMaterial geolocationSwitch;
     private boolean suppressSwitchCallback;
     private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+    /**
+     * Initializes the organizer event detail screen and subscribes to event updates.
+     *
+     * @param savedInstanceState the previously saved instance state, or {@code null} when the
+     *                           activity is created for the first time
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -136,6 +142,7 @@ public class OrganizerEventDetailsActivity extends AppCompatActivity {
             return true;
         });
         
+        // Opens the event editing screen for the current organizer-owned event.
         findViewById(R.id.btn_edit_event).setOnClickListener(v -> {
              if (eventId != null) {
                  Intent intent = new Intent(this, OrganizerEditEventActivity.class);
@@ -146,6 +153,7 @@ public class OrganizerEventDetailsActivity extends AppCompatActivity {
              }
         });
         
+        // Opens the entrant waitlist screen for the current event.
         findViewById(R.id.btn_view_waitlist).setOnClickListener(v -> {
              if (eventId != null) {
                  Intent intent = new Intent(this, OrganizerEntrantListActivity.class);
@@ -156,6 +164,7 @@ public class OrganizerEventDetailsActivity extends AppCompatActivity {
              }
         });
         
+        // Opens the map view showing waitlist entrant locations for the event.
         findViewById(R.id.btn_registration_map).setOnClickListener(v -> {
              if (eventId != null) {
                  Intent intent = new Intent(this, OrganizerEventMapActivity.class);
@@ -166,11 +175,17 @@ public class OrganizerEventDetailsActivity extends AppCompatActivity {
              }
         });
 
+        // Reserved for showing the event QR code once that feature is implemented.
         findViewById(R.id.btn_show_qr).setOnClickListener(v -> {
             // TODO: show QR code dialog
         });
     }
-    
+
+    /**
+     * Removes the active event listener when the activity is destroyed.
+     *
+     * @return no value
+     */
     @Override
     protected void onDestroy() {
         super.onDestroy();

@@ -41,6 +41,12 @@ public class OrganizerEventMapActivity extends AppCompatActivity implements OnMa
     private SwitchMaterial geolocationSwitch;
     private boolean suppressSwitchCallback;
 
+    /**
+     * Initializes the organizer event map screen and starts loading map data.
+     *
+     * @param savedInstanceState the previously saved instance state, or {@code null} when the
+     *                           activity is created for the first time
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -95,13 +101,21 @@ public class OrganizerEventMapActivity extends AppCompatActivity implements OnMa
             return true;
         });
 
+        // Returns to the previous organizer event screen.
         findViewById(R.id.btn_back_to_event).setOnClickListener(v -> finish());
 
+        // Reserved for showing the event QR code once that feature is implemented.
         findViewById(R.id.btn_show_qr).setOnClickListener(v -> {
             // TODO: show QR code dialog
         });
     }
 
+    /**
+     * Receives the Google Map instance once map rendering is ready.
+     *
+     * @param map the Google Map instance that will render entrant locations
+     * @return no value
+     */
     @Override
     public void onMapReady(GoogleMap map) {
         googleMap = map;
@@ -110,6 +124,11 @@ public class OrganizerEventMapActivity extends AppCompatActivity implements OnMa
         loadEntrantLocations();
     }
 
+    /**
+     * Loads the event header details shown above the organizer map.
+     *
+     * @return no value
+     */
     private void loadEventHeader() {
         db.collection("events").document(eventId).get()
                 .addOnSuccessListener(snapshot -> {
@@ -133,6 +152,11 @@ public class OrganizerEventMapActivity extends AppCompatActivity implements OnMa
                 .addOnFailureListener(e -> Toast.makeText(this, "Failed to load event details", Toast.LENGTH_SHORT).show());
     }
 
+    /**
+     * Loads waitlist entrant locations and renders them as map markers.
+     *
+     * @return no value
+     */
     private void loadEntrantLocations() {
         if (googleMap == null) {
             return;
@@ -171,6 +195,12 @@ public class OrganizerEventMapActivity extends AppCompatActivity implements OnMa
                 .addOnFailureListener(e -> Toast.makeText(this, "Failed to load waitlist locations", Toast.LENGTH_SHORT).show());
     }
 
+    /**
+     * Converts stored waitlist location data into marker descriptors for map rendering.
+     *
+     * @param rawLocations the raw Firestore field containing entrant location data
+     * @return the list of marker descriptors extracted from the raw location field
+     */
     private List<MarkerData> extractMarkers(Object rawLocations) {
         List<MarkerData> markers = new ArrayList<>();
         if (!(rawLocations instanceof Map<?, ?>)) {
@@ -202,11 +232,21 @@ public class OrganizerEventMapActivity extends AppCompatActivity implements OnMa
         return markers;
     }
 
+    /**
+     * Lightweight immutable holder for a marker that should be rendered on the organizer map.
+     */
     private static class MarkerData {
         private final double latitude;
         private final double longitude;
         private final String title;
 
+        /**
+         * Creates a marker descriptor for an entrant location.
+         *
+         * @param latitude the marker latitude in decimal degrees
+         * @param longitude the marker longitude in decimal degrees
+         * @param title the marker title shown on the map
+         */
         private MarkerData(double latitude, double longitude, String title) {
             this.latitude = latitude;
             this.longitude = longitude;

@@ -18,6 +18,12 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
  *   If extra time is available, these features can be implemented later.
  */
 public class OrganizerProfileActivity extends AppCompatActivity {
+    /**
+     * Initializes the organizer profile screen and configures its placeholder actions.
+     *
+     * @param savedInstanceState the previously saved instance state, or {@code null} when the
+     *                           activity is created for the first time
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -37,12 +43,12 @@ public class OrganizerProfileActivity extends AppCompatActivity {
             return true;
         });
 
-        // Update Info button
+        // Reserved for saving organizer profile edits once persistence is implemented.
         findViewById(R.id.btn_update_info).setOnClickListener(v -> {
             // TODO: collect fields and persist
         });
 
-        // Delete Account button
+        // Reserved for deleting the organizer account after confirmation is implemented.
         findViewById(R.id.btn_delete_account).setOnClickListener(v -> {
             // TODO: show confirmation dialog and delete account
         });
