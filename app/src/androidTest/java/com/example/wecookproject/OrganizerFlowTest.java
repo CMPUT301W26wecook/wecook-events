@@ -291,11 +291,11 @@ public class OrganizerFlowTest {
 
     /**
      * test8: Launching OrganizerEventDetailsActivity with a valid event ID
-     * should display all required UI elements (name, dates, edit, waitlist, map
-     * buttons).
+     * should display required UI elements, show geolocation toggle,
+     * and navigate to Registration Map where toggle is also visible.
      */
     @Test
-    public void test8_EventDetailsScreenDisplaysCorrectly() {
+    public void test8_EventDetailsScreenDisplaysAndNavigatesToRegistrationMap() {
         // Use a unique ID to avoid collisions across test runs
         String mockEventId = "mock-details-" + UUID.randomUUID();
         @SuppressWarnings("deprecation")
@@ -309,7 +309,7 @@ public class OrganizerFlowTest {
                 100,
                 50,
                 "Random",
-                false,
+                true,
                 "Edmonton",
                 "Test description"
         );
@@ -333,6 +333,12 @@ public class OrganizerFlowTest {
         onView(withId(R.id.btn_edit_event)).check(matches(isDisplayed()));
         onView(withId(R.id.btn_view_waitlist)).check(matches(isDisplayed()));
         onView(withId(R.id.btn_registration_map)).check(matches(isDisplayed()));
+        onView(withId(R.id.switch_geolocation)).check(matches(isDisplayed()));
+
+        onView(withId(R.id.btn_registration_map)).perform(click());
+        safeSleep(WAIT_MEDIUM);
+        onView(withId(R.id.btn_back_to_event)).check(matches(isDisplayed()));
+        onView(withId(R.id.switch_geolocation)).check(matches(isDisplayed()));
 
         detailsScenario.close();
 
