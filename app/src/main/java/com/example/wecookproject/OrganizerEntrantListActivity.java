@@ -19,6 +19,7 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class OrganizerEntrantListActivity extends AppCompatActivity {
@@ -34,6 +35,7 @@ public class OrganizerEntrantListActivity extends AppCompatActivity {
     private android.widget.EditText lotteryCountInput;
     private final List<String> waitlistEntrantIds = new ArrayList<>();
     private final List<String> selectedEntrantIds = new ArrayList<>();
+    private Date registrationEndDate;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -142,6 +144,9 @@ public class OrganizerEntrantListActivity extends AppCompatActivity {
                         setTitle("Event Waitlist");
                     }
 
+                    // Extract and store the registration end date
+                    registrationEndDate = documentSnapshot.getDate("registrationEndDate");
+
                     List<String> entrantIds = readEntrantIds(documentSnapshot);
 
                     waitlistEntrantIds.clear();
@@ -234,6 +239,18 @@ public class OrganizerEntrantListActivity extends AppCompatActivity {
     }
 
     private void performLotteryDraw() {
+        // Check if lottery is available (only after registration ends)
+        if (registrationEndDate == null) {
+            Toast.makeText(this, "Registration end date not found", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Date currentDate = new Date();
+        if (!currentDate.after(registrationEndDate)) {
+            Toast.makeText(this, "Lottery is available only after registration ends", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         String input = lotteryCountInput.getText().toString().trim();
 
         if (input.isEmpty()) {

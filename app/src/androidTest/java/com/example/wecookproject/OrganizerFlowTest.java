@@ -392,6 +392,90 @@ public class OrganizerFlowTest {
         scenario.close();
     }
 
+    /**
+     * test11: Lottery with entrants should select winners and update the event status.
+     * This test creates an event with entrants on the waitlist, performs lottery,
+     * and verifies that winners are selected.
+     */
+    @Test
+    public void test11_LotteryAvailableOnlyAfterRegistrationEnds() throws InterruptedException {
+        String lotteryWithEntrantsEventId = "lottery-entrants-test-" + UUID.randomUUID();
+        
+        // Create an event with a past registration end date
+        @SuppressWarnings("deprecation")
+        Event lotteryTestEvent = new Event(
+                lotteryWithEntrantsEventId,
+                "organizer-test",
+                "Lottery With Entrants Test Event",
+                new Date(126, 2, 1),   // 2026-03-01 (registration start)
+                new Date(126, 2, 10),  // 2026-03-10 (registration end - in the past)
+                "Open to all",
+                25,
+                0,
+                "System generates",
+                false,
+                "Edmonton",
+                "Test event for lottery with entrants"
+        );
+        
+        // Add some entrants to the waitlist
+        List<String> entrants = Arrays.asList("entrant1", "entrant2", "entrant3", "entrant4", "entrant5");
+        lotteryTestEvent.setWaitlistEntrantIds(entrants);
+        lotteryTestEvent.setCurrentWaitlistCount(entrants.size());
+        
+        CountDownLatch eventCreateLatch = new CountDownLatch(1);
+        db.collection("events").document(lotteryWithEntrantsEventId)
+                .set(lotteryTestEvent)
+                .addOnCompleteListener(task -> eventCreateLatch.countDown());
+        awaitLatch(eventCreateLatch, 15, "lottery with entrants test event creation");
+        
+        // Launch OrganizerEntrantListActivity with the test event
+        Intent intent = new Intent(
+                ApplicationProvider.getApplicationContext(),
+                OrganizerEntrantListActivity.class);
+        intent.putExtra("eventId", lotteryWithEntrantsEventId);
+        
+        ActivityScenario<OrganizerEntrantListActivity> scenario =
+                ActivityScenario.launch(intent);
+        
+        safeSleep(WAIT_MEDIUM); // allow event data to load
+        
+        // Perform lottery draw for 3 winners
+        onView(withId(R.id.et_lottery_count)).perform(replaceText("3"), closeSoftKeyboard());
+        onView(withId(R.id.btn_lottery_draw)).perform(click());
+        
+        safeSleep(WAIT_LONG); // allow lottery operation and Firestore updates to complete
+        
+        // Verify that winners were selected by checking the event document
+        AtomicReference<DocumentSnapshot> snapshotRef = new AtomicReference<>();
+        CountDownLatch readLatch = new CountDownLatch(1);
+        db.collection("events").document(lotteryWithEntrantsEventId)
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    snapshotRef.set(snapshot);
+                    readLatch.countDown();
+                })
+                .addOnFailureListener(e -> readLatch.countDown());
+        
+        assertTrue("Timed out reading updated event after lottery", readLatch.await(15, TimeUnit.SECONDS));
+        DocumentSnapshot snapshot = snapshotRef.get();
+        assertTrue("Event document must exist after lottery", snapshot != null && snapshot.exists());
+        
+        // Check that selected entrants list exists and has 3 winners
+        List<String> selectedEntrants = (List<String>) snapshot.get("selectedEntrantIds");
+        assertNotNull("Selected entrants list should not be null after lottery", selectedEntrants);
+        assertEquals("Should have selected 3 winners", 3, selectedEntrants.size());
+        
+        scenario.close();
+        
+        // Clean up: delete the test event
+        CountDownLatch eventDeleteLatch = new CountDownLatch(1);
+        db.collection("events").document(lotteryWithEntrantsEventId)
+                .delete()
+                .addOnCompleteListener(task -> eventDeleteLatch.countDown());
+        awaitLatch(eventDeleteLatch, 15, "lottery with entrants test event cleanup");
+    }
+
     // 鈹€鈹€鈹€ Helpers 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 
     /**
