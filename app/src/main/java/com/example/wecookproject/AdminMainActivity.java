@@ -5,8 +5,17 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
+/**
+ * It uses the BottomNavigationView that allows administrators to switch between different management views.
+ */
 public class AdminMainActivity extends AppCompatActivity {
 
+    /**
+     * Initializes the activity, sets up the layout and the bottom navigation menu.
+     * Loads the default fragment (AdminUserFragment) when the activity is first created.
+     * 
+     * @param savedInstanceState  Saved state of the activity
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

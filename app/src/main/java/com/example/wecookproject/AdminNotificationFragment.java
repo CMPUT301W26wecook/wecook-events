@@ -8,6 +8,10 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+/**
+ * Not implemented
+ */
+
 public class AdminNotificationFragment extends Fragment {
     @Nullable
     @Override

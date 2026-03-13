@@ -20,6 +20,10 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Fragment for the Administrator to browse and manage the list of all Entrants in the system.
+ * It provides functionality to view Entrant profiles and clear profile information.
+ */
 public class AdminUserFragment extends Fragment {
 
     private RecyclerView recyclerView;
@@ -28,6 +32,16 @@ public class AdminUserFragment extends Fragment {
     private FirebaseFirestore db;
     private AdminViewModel viewModel;
 
+    /**
+     * Let fragment show Entrant List UI
+     * It initializes the RecyclerView, adapter,
+     * and setup event listeners for the menu actions and Entrant profile clearing.
+     *
+     * @param inflater           Parent view to which the fragment's UI should be attached.
+     * @param container          Parent view for the fragment's UI.
+     * @param savedInstanceState Saved state of the fragment.
+     * @return The View for the Entrant List UI.
+     */
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -91,6 +105,9 @@ public class AdminUserFragment extends Fragment {
         return view;
     }
 
+    /**
+     * Get list of Entrants from Firebase.
+     */
     private void loadUsersFromFirestore() {
         db.collection("users")
                 .whereEqualTo("role", "entrant")
@@ -112,35 +129,4 @@ public class AdminUserFragment extends Fragment {
                     adapter.notifyDataSetChanged();
                 });
     }
-
-    // For testing purposes only
-    /*
-    private void addSampleUsers() {
-        String[] firstNames = {"John", "Jane", "Alice", "Bob", "Charlie"};
-        String[] lastNames = {"Doe", "Smith", "Johnson", "Brown", "Wilson"};
-        String[] roles = {"entrant", "entrant", "organizer", "entrant", "organizer"};
-
-        for (int i = 0; i < 5; i++) {
-            String androidId = "sample_device_" + i;
-            User user = new User(
-                    firstNames[i],
-                    lastNames[i],
-                    "1990-01-01",
-                    "123 Sample St",
-                    "Apt " + (i + 1),
-                    "Sample City",
-                    "T6G 2R3",
-                    "Canada",
-                    androidId,
-                    roles[i]
-            );
-
-            db.collection("users").document(androidId)
-                    .set(user.toFirestoreMap())
-                    .addOnSuccessListener(aVoid -> Log.d("AdminUserFragment", "Sample user added: " + androidId))
-                    .addOnFailureListener(e -> Log.e("AdminUserFragment", "Error adding sample user", e));
-        }
-        Toast.makeText(getContext(), "5 Sample users added to database", Toast.LENGTH_SHORT).show();
-    }
-     */
 }

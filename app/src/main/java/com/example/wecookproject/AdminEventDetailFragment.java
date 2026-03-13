@@ -23,18 +23,34 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
+/**
+ * A Fragment that displays the details of a specific event for administrative purposes.
+ */
 public class AdminEventDetailFragment extends Fragment {
 
     private AdminViewModel viewModel;
     private FirebaseFirestore db = FirebaseFirestore.getInstance();;
     private Event currentEvent;
 
+    /**
+     * Initializes the fragment and retrieves the shared AdminViewModel.
+     * 
+     * @param savedInstanceState    Saved state of the fragment
+     */
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         viewModel = new ViewModelProvider(requireActivity()).get(AdminViewModel.class);
     }
 
+    /**
+     * Show event detail UI and handles Admin interactions for deleting posters and events.
+     * 
+     * @param inflater           Parent view to which the fragment's UI should be attached.
+     * @param container          Parent view for the fragment's UI.
+     * @param savedInstanceState Saved state of the fragment.
+     * @return The View for the Event Detail UI.
+     */
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
