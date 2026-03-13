@@ -15,6 +15,7 @@ import static androidx.test.espresso.matcher.ViewMatchers.withText;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
 
 import android.content.Intent;
 import android.provider.Settings;
@@ -474,6 +475,77 @@ public class OrganizerFlowTest {
                 .delete()
                 .addOnCompleteListener(task -> eventDeleteLatch.countDown());
         awaitLatch(eventDeleteLatch, 15, "lottery with entrants test event cleanup");
+    }
+
+    /**
+     * test12: Replacement draw should pick a random applicant from the remaining
+     * pool and update the replacementEntrantIds field on the event document.
+     */
+    @Test
+    public void test12_ReplacementDrawPicksRandomApplicant() throws InterruptedException {
+        String replacementEventId = "replacement-test-" + UUID.randomUUID();
+        @SuppressWarnings("deprecation")
+        Event replacementEvent = new Event(
+                replacementEventId,
+                "organizer-test",
+                "Replacement Draw Event",
+                new Date(126, 2, 1),   // 2026-03-01
+                new Date(126, 2, 10),  // 2026-03-10 (in past)
+                "Open to all",
+                25,
+                0,
+                "System generates",
+                false,
+                "Edmonton",
+                "Event for replacement test"
+        );
+        List<String> entrants = Arrays.asList("a1", "a2", "a3", "a4", "a5");
+        replacementEvent.setWaitlistEntrantIds(entrants);
+        replacementEvent.setCurrentWaitlistCount(entrants.size());
+        replacementEvent.setSelectedEntrantIds(Arrays.asList("a1", "a2"));
+
+        CountDownLatch createLatch = new CountDownLatch(1);
+        db.collection("events").document(replacementEventId)
+                .set(replacementEvent)
+                .addOnCompleteListener(task -> createLatch.countDown());
+        awaitLatch(createLatch, 15, "replacement event creation");
+
+        Intent intent = new Intent(
+                ApplicationProvider.getApplicationContext(),
+                OrganizerEntrantListActivity.class);
+        intent.putExtra("eventId", replacementEventId);
+        ActivityScenario<OrganizerEntrantListActivity> scenario =
+                ActivityScenario.launch(intent);
+        safeSleep(WAIT_MEDIUM);
+
+        // trigger replacement draw
+        onView(withId(R.id.btn_redraw_entrants)).perform(click());
+        safeSleep(WAIT_LONG);
+
+        AtomicReference<DocumentSnapshot> snapshotRef = new AtomicReference<>();
+        CountDownLatch readLatch = new CountDownLatch(1);
+        db.collection("events").document(replacementEventId)
+                .get()
+                .addOnSuccessListener(snapshot -> { snapshotRef.set(snapshot); readLatch.countDown(); })
+                .addOnFailureListener(e -> readLatch.countDown());
+
+        assertTrue("Timed out reading replacement event", readLatch.await(15, TimeUnit.SECONDS));
+        DocumentSnapshot snapshot = snapshotRef.get();
+        assertTrue("Event document must exist", snapshot != null && snapshot.exists());
+        List<String> replacements = (List<String>) snapshot.get("replacementEntrantIds");
+        assertNotNull("Replacement list should not be null", replacements);
+        assertEquals("Should have exactly one replacement", 1, replacements.size());
+        String chosen = replacements.get(0);
+        assertFalse("Replacement should not be an originally selected applicant",
+                Arrays.asList("a1", "a2").contains(chosen));
+        assertTrue("Replacement should come from waitlist pool", entrants.contains(chosen));
+
+        scenario.close();
+        CountDownLatch delLatch = new CountDownLatch(1);
+        db.collection("events").document(replacementEventId)
+                .delete()
+                .addOnCompleteListener(task -> delLatch.countDown());
+        awaitLatch(delLatch, 15, "replacement event cleanup");
     }
 
     // 鈹€鈹€鈹€ Helpers 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
