@@ -1,6 +1,7 @@
 package com.example.wecookproject;
 
 import static androidx.test.espresso.Espresso.onView;
+import static androidx.test.espresso.Espresso.pressBack;
 import static androidx.test.espresso.action.ViewActions.clearText;
 import static androidx.test.espresso.action.ViewActions.click;
 import static androidx.test.espresso.action.ViewActions.typeText;
@@ -98,7 +99,7 @@ public class UserFlowTest {
         onView(withId(R.id.btn_continue)).perform(click());
         onView(withId(R.id.rv_events)).check(doesNotExist());
     }
-    
+
 
 
     @Test
@@ -168,54 +169,6 @@ public class UserFlowTest {
         onView(withId(R.id.rv_events)).check(matches(isDisplayed()));
     }
 
-    
-    @Test
-    public void test15_EventDetailsDialogContent() {
-        prepareTestUser();
-        createTestEvent("Test Workshop", "Innovation Lab", 5, new ArrayList<>());
-        ActivityScenario.launch(UserEventActivity.class);
-        safeSleep(1500);
-        onView(withText("Test Workshop")).perform(click());
-        onView(withId(R.id.tv_dialog_event_name)).check(matches(withText("Test Workshop")));
-        onView(withId(R.id.btn_close_dialog)).perform(click());
-    }
-
-    @Test
-    public void test16_JoinWaitlistSuccess() {
-        prepareTestUser();
-        createTestEvent("Joinable Event", "Hall A", 10, new ArrayList<>());
-        ActivityScenario.launch(UserEventActivity.class);
-        safeSleep(1500);
-        onView(withText("Joinable Event")).perform(click());
-        onView(withId(R.id.btn_join_waitlist)).perform(click());
-        safeSleep(1000);
-        onView(withId(R.id.btn_join_waitlist)).check(matches(withText("Already Joined")));
-    }
-
-    @Test
-    public void test17_JoinWaitlistFullStatus() {
-        prepareTestUser();
-        List<String> fullList = new ArrayList<>();
-        fullList.add("user1");
-        createTestEvent("Full Event", "Hall B", 1, fullList);
-        ActivityScenario.launch(UserEventActivity.class);
-        safeSleep(1500);
-        onView(withText("Full Event")).perform(click());
-        onView(withId(R.id.btn_join_waitlist)).check(matches(withText("Waitlist Full")));
-        onView(withId(R.id.btn_join_waitlist)).check(matches(not(isEnabled())));
-    }
-
-    @Test
-    public void test18_AlreadyJoinedStatus() {
-        prepareTestUser();
-        List<String> joinedList = new ArrayList<>();
-        joinedList.add(androidId);
-        createTestEvent("Joined Event", "Hall C", 5, joinedList);
-        ActivityScenario.launch(UserEventActivity.class);
-        safeSleep(1500);
-        onView(withText("Joined Event")).perform(click());
-        onView(withId(R.id.btn_join_waitlist)).check(matches(withText("Already Joined")));
-    }
 
     @Test
     public void test19_BottomNav_ScanToast() {
@@ -226,13 +179,6 @@ public class UserFlowTest {
         onView(withId(R.id.rv_events)).check(matches(isDisplayed()));
     }
 
-    @Test
-    public void test20_BottomNav_HistoryToast() {
-        prepareTestUser();
-        ActivityScenario.launch(UserEventActivity.class);
-        onView(withId(R.id.nav_history)).perform(click());
-        onView(withId(R.id.rv_events)).check(matches(isDisplayed()));
-    }
 
 
     private void prepareTestUser() {

@@ -1,10 +1,16 @@
 package com.example.wecookproject.model;
 
+import java.util.List;
+import java.util.ArrayList;
+
+import java.util.Date;
+
 public class Event {
     private String eventId;
     private String organizerId;
     private String eventName;
-    private String registrationPeriod;
+    private Date registrationStartDate;
+    private Date registrationEndDate;
     private String enrollmentCriteria;
     private int maxWaitlist;
     private int currentWaitlistCount;
@@ -15,13 +21,16 @@ public class Event {
 
     private String posterPath;
     private String qrCodePath;
+    private List<String> waitlistEntrantIds = new ArrayList<>();
+    private List<String> selectedEntrantIds = new ArrayList<>();
+    private List<String> replacementEntrantIds = new ArrayList<>();
+    private Integer lotteryCount = 0;
 
     // Required empty constructor for Firestore
     public Event() {
     }
 
-    // Constructor with 11 arguments
-    public Event(String eventId, String organizerId, String eventName, String registrationPeriod,
+    public Event(String eventId, String organizerId, String eventName, Date registrationStartDate, Date registrationEndDate,
                  String enrollmentCriteria, int maxWaitlist, int currentWaitlistCount, String lotteryMethodology,
                  boolean geolocationRequired, String location, String description) {
         this(eventId, organizerId, eventName, registrationPeriod, enrollmentCriteria, maxWaitlist,
@@ -35,7 +44,8 @@ public class Event {
         this.eventId = eventId;
         this.organizerId = organizerId;
         this.eventName = eventName;
-        this.registrationPeriod = registrationPeriod;
+        this.registrationStartDate = registrationStartDate;
+        this.registrationEndDate = registrationEndDate;
         this.enrollmentCriteria = enrollmentCriteria;
         this.maxWaitlist = maxWaitlist;
         this.currentWaitlistCount = currentWaitlistCount;
@@ -71,12 +81,20 @@ public class Event {
         this.eventName = eventName;
     }
 
-    public String getRegistrationPeriod() {
-        return registrationPeriod;
+    public Date getRegistrationStartDate() {
+        return registrationStartDate;
     }
 
-    public void setRegistrationPeriod(String registrationPeriod) {
-        this.registrationPeriod = registrationPeriod;
+    public void setRegistrationStartDate(Date registrationStartDate) {
+        this.registrationStartDate = registrationStartDate;
+    }
+
+    public Date getRegistrationEndDate() {
+        return registrationEndDate;
+    }
+
+    public void setRegistrationEndDate(Date registrationEndDate) {
+        this.registrationEndDate = registrationEndDate;
     }
 
     public String getEnrollmentCriteria() {
@@ -149,5 +167,37 @@ public class Event {
 
     public void setQrCodePath(String qrCodePath) {
         this.qrCodePath = qrCodePath;
+    }
+
+    public List<String> getWaitlistEntrantIds() {
+        return waitlistEntrantIds;
+    }
+
+    public void setWaitlistEntrantIds(List<String> waitlistEntrantIds) {
+        this.waitlistEntrantIds = waitlistEntrantIds;
+    }
+
+    public List<String> getSelectedEntrantIds() {
+        return selectedEntrantIds;
+    }
+
+    public void setSelectedEntrantIds(List<String> selectedEntrantIds) {
+        this.selectedEntrantIds = selectedEntrantIds;
+    }
+
+    public List<String> getReplacementEntrantIds() {
+        return replacementEntrantIds;
+    }
+
+    public void setReplacementEntrantIds(List<String> replacementEntrantIds) {
+        this.replacementEntrantIds = replacementEntrantIds;
+    }
+
+    public Integer getLotteryCount() {
+        return lotteryCount;
+    }
+
+    public void setLotteryCount(Integer lotteryCount) {
+        this.lotteryCount = lotteryCount;
     }
 }
