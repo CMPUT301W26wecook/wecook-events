@@ -42,8 +42,10 @@ public class OrganizerNotificationActivity extends AppCompatActivity {
             return true;
         });
 
+        // Returns to the previous organizer screen without sending a notification.
         findViewById(R.id.iv_back).setOnClickListener(v -> finish());
 
+        // Reserved for submitting the notification once sending is implemented.
         findViewById(R.id.btn_send_notification).setOnClickListener(v -> {
             // TODO: send notification
         });

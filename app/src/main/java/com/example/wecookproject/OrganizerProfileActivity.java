@@ -42,12 +42,12 @@ public class OrganizerProfileActivity extends AppCompatActivity {
             return true;
         });
 
-        // Update Info button
+        // Reserved for saving organizer profile edits once persistence is implemented.
         findViewById(R.id.btn_update_info).setOnClickListener(v -> {
             // TODO: collect fields and persist
         });
 
-        // Delete Account button
+        // Reserved for deleting the organizer account after confirmation is implemented.
         findViewById(R.id.btn_delete_account).setOnClickListener(v -> {
             // TODO: show confirmation dialog and delete account
         });
