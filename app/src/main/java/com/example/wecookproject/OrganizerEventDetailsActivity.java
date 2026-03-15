@@ -1,26 +1,13 @@
 package com.example.wecookproject;
 
 import android.content.Intent;
-import android.content.ClipData;
-import android.content.ClipboardManager;
-import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.Color;
-import android.net.Uri;
 import android.os.Bundle;
-import android.util.TypedValue;
-import android.view.Gravity;
-import android.view.ViewGroup;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.wecookproject.model.Event;
-import com.google.zxing.WriterException;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -29,13 +16,24 @@ import com.google.firebase.firestore.ListenerRegistration;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
 
+/**
+ * Activity for organizers to view an event's details, observe live updates, and navigate to
+ * related management flows such as editing the event or reviewing its waitlist. Within the app it
+ * acts as the UI controller for the organizer event-details screen, binding Firestore snapshot
+ * data directly to the view layer.
+ *
+ * Outstanding issues:
+ * - Some actions are incomplete or placeholder-driven, including the registration map button and
+ *   the QR-code flow and will be implemented in part 4.
+ * - Presentation and Firestore listener logic are handled directly in the Activity
+ *  
+ */
 public class OrganizerEventDetailsActivity extends AppCompatActivity {
     
     private ListenerRegistration eventListener;
     private SwitchMaterial geolocationSwitch;
     private boolean suppressSwitchCallback;
     private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-    private Event currentEvent;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -80,7 +78,6 @@ public class OrganizerEventDetailsActivity extends AppCompatActivity {
                         if (documentSnapshot != null && documentSnapshot.exists()) {
                             Event event = documentSnapshot.toObject(Event.class);
                             if (event != null) {
-                                currentEvent = event;
                                 tvEventNameBig.setText(event.getEventName());
                                 tvEventLocation.setText(event.getLocation());
                                 tvEventNameDetail.setText(event.getEventName());
@@ -102,11 +99,10 @@ public class OrganizerEventDetailsActivity extends AppCompatActivity {
                                 geolocationSwitch.setChecked(event.isGeolocationRequired());
                                 suppressSwitchCallback = false;
                                 
-                                String description = "Enrollment: " + event.getEnrollmentCriteria() + "\n" +
-                                                     "Methodology: " + event.getLotteryMethodology() + "\n" +
-                                                     event.getDescription();
-                                tvEventDescription.setText(description.trim());
-                                ensureQrPathExists(db, event);
+                                String description = event.getDescription() == null
+                                        ? ""
+                                        : event.getDescription().trim();
+                                tvEventDescription.setText(description);
                             }
                         } else {
                             // Event was deleted or doesn't exist
@@ -170,94 +166,8 @@ public class OrganizerEventDetailsActivity extends AppCompatActivity {
         });
 
         findViewById(R.id.btn_show_qr).setOnClickListener(v -> {
-            if (eventId == null || eventId.trim().isEmpty()) {
-                Toast.makeText(this, "No event ID provided", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            String qrPayload = null;
-            if (currentEvent != null && currentEvent.getQrCodePath() != null && !currentEvent.getQrCodePath().trim().isEmpty()) {
-                qrPayload = currentEvent.getQrCodePath().trim();
-            } else {
-                qrPayload = QrCodeUtils.buildPromotionalEventLink(eventId);
-            }
-            showQrDialog(qrPayload);
+            // TODO: show QR code dialog
         });
-    }
-
-    private void ensureQrPathExists(FirebaseFirestore db, Event event) {
-        if (event.getEventId() == null || event.getEventId().trim().isEmpty()) {
-            return;
-        }
-        String existing = event.getQrCodePath();
-        if (existing != null && !existing.trim().isEmpty()) {
-            return;
-        }
-        String generatedLink = QrCodeUtils.buildPromotionalEventLink(event.getEventId());
-        currentEvent.setQrCodePath(generatedLink);
-        db.collection("events")
-                .document(event.getEventId())
-                .update("qrCodePath", generatedLink);
-    }
-
-    private void showQrDialog(String payload) {
-        try {
-            int qrSize = (int) TypedValue.applyDimension(
-                    TypedValue.COMPLEX_UNIT_DIP,
-                    280,
-                    getResources().getDisplayMetrics()
-            );
-            Bitmap qrBitmap = QrCodeUtils.generateQrBitmap(payload, qrSize);
-            ImageView qrImage = new ImageView(this);
-            qrImage.setLayoutParams(new ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-            ));
-            qrImage.setAdjustViewBounds(true);
-            qrImage.setImageBitmap(qrBitmap);
-
-            TextView linkView = new TextView(this);
-            linkView.setLayoutParams(new ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-            ));
-            linkView.setText(payload);
-            linkView.setTextColor(Color.BLUE);
-            linkView.setPaintFlags(linkView.getPaintFlags() | android.graphics.Paint.UNDERLINE_TEXT_FLAG);
-            linkView.setOnClickListener(v -> {
-                Intent openIntent = new Intent(this, PublicEventLandingActivity.class);
-                openIntent.setData(Uri.parse(payload));
-                startActivity(openIntent);
-            });
-            linkView.setOnLongClickListener(v -> {
-                ClipboardManager clipboard =
-                        (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
-                if (clipboard != null) {
-                    clipboard.setPrimaryClip(ClipData.newPlainText("Event link", payload));
-                    Toast.makeText(this, "Link copied", Toast.LENGTH_SHORT).show();
-                }
-                return true;
-            });
-            int topPadding = (int) TypedValue.applyDimension(
-                    TypedValue.COMPLEX_UNIT_DIP, 12, getResources().getDisplayMetrics());
-            linkView.setPadding(0, topPadding, 0, 0);
-
-            LinearLayout dialogContent = new LinearLayout(this);
-            dialogContent.setOrientation(LinearLayout.VERTICAL);
-            dialogContent.setGravity(Gravity.CENTER_HORIZONTAL);
-            int padding = (int) TypedValue.applyDimension(
-                    TypedValue.COMPLEX_UNIT_DIP, 16, getResources().getDisplayMetrics());
-            dialogContent.setPadding(padding, padding, padding, padding);
-            dialogContent.addView(qrImage);
-            dialogContent.addView(linkView);
-
-            new AlertDialog.Builder(this)
-                    .setTitle("Promotional QR Code")
-                    .setView(dialogContent)
-                    .setPositiveButton("Close", null)
-                    .show();
-        } catch (WriterException e) {
-            Toast.makeText(this, "Failed to generate QR code", Toast.LENGTH_SHORT).show();
-        }
     }
     
     @Override

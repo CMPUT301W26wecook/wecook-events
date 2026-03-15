@@ -16,18 +16,20 @@ import static org.junit.Assert.assertTrue;
 
 import android.content.Intent;
 import android.provider.Settings;
+
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
 
-import com.example.wecookproject.model.Event;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.runners.MethodSorters;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -39,6 +41,7 @@ import java.util.UUID;
 
 @RunWith(AndroidJUnit4.class)
 @LargeTest
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class UserFlowTest {
 
     private final String testEventId = "integration_test_event";
@@ -105,7 +108,7 @@ public class UserFlowTest {
 
 
     @Test
-    public void test7_ProfileEditModeToggle() {
+    public void test6_ProfileEditModeToggle() {
         prepareTestUser();
         ActivityScenario.launch(UserProfileActivity.class);
         onView(withId(R.id.et_first_name)).check(matches(not(isEnabled())));
@@ -115,7 +118,7 @@ public class UserFlowTest {
     }
 
     @Test
-    public void test8_ProfileUpdateSuccess() {
+    public void test7_ProfileUpdateSuccess() {
         prepareTestUser();
         ActivityScenario.launch(UserProfileActivity.class);
         onView(withId(R.id.btn_update)).perform(click());
@@ -126,7 +129,7 @@ public class UserFlowTest {
     }
 
     @Test
-    public void test9_ProfileNotificationToggle() {
+    public void test8_ProfileNotificationToggle() {
         prepareTestUser();
         ActivityScenario.launch(UserProfileActivity.class);
         onView(withId(R.id.iv_notifications)).perform(click());
@@ -134,7 +137,7 @@ public class UserFlowTest {
     }
 
     @Test
-    public void test10_ProfileAutoLoginToggle() {
+    public void test9_ProfileAutoLoginToggle() {
         prepareTestUser();
         ActivityScenario.launch(UserProfileActivity.class);
         onView(withId(R.id.btn_update)).perform(click());
@@ -146,7 +149,7 @@ public class UserFlowTest {
     }
 
     @Test
-    public void test11_ProfileDeleteAccountDialogShow() {
+    public void test10_ProfileDeleteAccountDialogShow() {
         prepareTestUser();
         ActivityScenario.launch(UserProfileActivity.class);
         onView(withId(R.id.btn_delete)).perform(click());
@@ -155,7 +158,7 @@ public class UserFlowTest {
     }
 
     @Test
-    public void test12_ProfileDeleteAccount_Cancel() {
+    public void test11_ProfileDeleteAccount_Cancel() {
         prepareTestUser();
         ActivityScenario.launch(UserProfileActivity.class);
         onView(withId(R.id.btn_delete)).perform(click());
@@ -164,10 +167,19 @@ public class UserFlowTest {
     }
 
     @Test
-    public void test13_ProfileNavigationToEvents() {
+    public void test12_ProfileNavigationToEvents() {
         prepareTestUser();
         ActivityScenario.launch(UserProfileActivity.class);
         onView(withId(R.id.nav_events)).perform(click());
+        onView(withId(R.id.rv_events)).check(matches(isDisplayed()));
+    }
+
+    @Test
+    public void test13_BottomNav_ScanToast() {
+        prepareTestUser();
+        ActivityScenario.launch(UserEventActivity.class);
+        onView(withId(R.id.nav_scan)).perform(click());
+
         onView(withId(R.id.rv_events)).check(matches(isDisplayed()));
     }
 
@@ -197,6 +209,35 @@ public class UserFlowTest {
         db.collection("events").document(eventId).delete();
     }
 
+    @Test
+    public void test14_EventDetailsShowsLotteryCriteriaButton() {
+        prepareTestUser();
+        createTestEvent("Lottery Event", "Edmonton", 10, List.of());
+
+        Intent intent = new Intent(ApplicationProvider.getApplicationContext(), UserEventDetailsActivity.class);
+        intent.putExtra("eventId", testEventId);
+        ActivityScenario.launch(intent);
+
+        onView(withId(R.id.btn_view_lottery_criteria)).check(matches(isDisplayed()));
+        onView(withId(R.id.btn_view_lottery_criteria)).perform(click());
+        onView(withText("Lottery Criteria")).check(matches(isDisplayed()));
+    }
+
+    @Test
+    public void test15_LotteryCriteriaBackReturnsToEventDetails() {
+        prepareTestUser();
+        createTestEvent("Lottery Event", "Edmonton", 10, List.of());
+
+        Intent intent = new Intent(ApplicationProvider.getApplicationContext(), UserEventDetailsActivity.class);
+        intent.putExtra("eventId", testEventId);
+        ActivityScenario.launch(intent);
+
+        onView(withId(R.id.btn_view_lottery_criteria)).perform(click());
+        onView(withId(R.id.iv_lottery_criteria_back)).perform(click());
+        safeSleep(500);
+        onView(withId(R.id.tv_detail_event_name)).check(matches(isDisplayed()));
+    }
+
 
 
     private void prepareTestUser() {
@@ -204,6 +245,7 @@ public class UserFlowTest {
         Map<String, Object> user = new HashMap<>();
         user.put("firstName", "Integration");
         user.put("lastName", "Tester");
+        user.put("role", "entrant");
         user.put("profileCompleted", true);
         db.collection("users").document(androidId).set(user).addOnCompleteListener(t -> latch.countDown());
         try { latch.await(3, TimeUnit.SECONDS); } catch (Exception ignored) {}
@@ -214,6 +256,7 @@ public class UserFlowTest {
         eventData.put("eventId", testEventId);
         eventData.put("eventName", name);
         eventData.put("location", loc);
+        eventData.put("description", "Test event description");
         eventData.put("maxWaitlist", (long) max);
         eventData.put("waitlistEntrantIds", entrants);
         eventData.put("currentWaitlistCount", (long) entrants.size());

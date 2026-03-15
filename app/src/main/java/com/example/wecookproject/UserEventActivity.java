@@ -228,7 +228,7 @@ public class UserEventActivity extends AppCompatActivity {
         tvDateRange.setText(UserEventUiUtils.formatDateRange(eventRecord.getRegistrationStartDate(), eventRecord.getRegistrationEndDate()));
         tvWaitlist.setText(UserEventUiUtils.formatWaitlistSummary(eventRecord));
         tvDescription.setText(UserEventUiUtils.buildDescription(eventRecord));
-        PosterLoader.loadInto(ivPoster, eventRecord.getPosterUrl());
+        PosterLoader.loadInto(ivPoster, eventRecord.getPosterPath());
 
         String status = eventRecord.getEffectiveStatus();
         if (status.isEmpty()) {
@@ -492,12 +492,10 @@ public class UserEventActivity extends AppCompatActivity {
         historyData.put("eventName", eventRecord.getEventName());
         historyData.put("location", eventRecord.getLocation());
         historyData.put("organizerId", eventRecord.getOrganizerId());
-        historyData.put("posterUrl", eventRecord.getPosterUrl());
+        historyData.put("posterUrl", eventRecord.getPosterPath());
         historyData.put("registrationStartDate", eventRecord.getRegistrationStartDate());
         historyData.put("registrationEndDate", eventRecord.getRegistrationEndDate());
         historyData.put("description", eventRecord.getDescription());
-        historyData.put("enrollmentCriteria", eventRecord.getEnrollmentCriteria());
-        historyData.put("lotteryMethodology", eventRecord.getLotteryMethodology());
         historyData.put("status", status);
         historyData.put("updatedAt", FieldValue.serverTimestamp());
 
