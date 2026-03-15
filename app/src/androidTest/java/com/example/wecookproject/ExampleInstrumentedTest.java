@@ -21,6 +21,6 @@ public class ExampleInstrumentedTest {
     public void useAppContext() {
         // Context of the app under test.
         Context appContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
-        assertEquals("com.example.wecookproject", appContext.getPackageName());
+        assertEquals("com.example.wecookproject", appContext.getPackageName());`r`n        assertEquals("Intentional smoke failure", 1, 2);
     }
 }
