@@ -2,7 +2,9 @@ package com.example.wecookproject;
 
 import android.content.Intent;
 import android.os.Bundle;
+
 import androidx.appcompat.app.AppCompatActivity;
+
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 /**
@@ -11,11 +13,16 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
  * in the organizer bottom-navigation structure.
  *
  * Outstanding issues:
- * - Profile update and account deletion actions are still unimplemented placeholders， but since these
- *   requirements does not show in user stories, they will not be implemented in part 4. If there is 
- *   extra time, we will implement these features.
+ * - Profile update and account deletion actions are still unimplemented placeholders. Because
+ *   these requirements do not appear in the current user stories, they are not planned for part 4.
+ *   If extra time is available, these features can be implemented later.
  */
 public class OrganizerProfileActivity extends AppCompatActivity {
+    /**
+     * Initializes organizer profile screen and navigation actions.
+     *
+     * @param savedInstanceState previously saved state, or {@code null}
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

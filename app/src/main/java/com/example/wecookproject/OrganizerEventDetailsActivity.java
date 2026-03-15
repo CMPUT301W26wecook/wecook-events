@@ -38,8 +38,9 @@ import java.util.Locale;
  * Outstanding issues:
  * - Some actions are incomplete or placeholder-driven, including the registration map button and
  *   the QR-code flow and will be implemented in part 4.
- * - Presentation and Firestore listener logic are handled directly in the Activity
- *  
+ * - Presentation and Firestore listener logic are handled directly in the Activity, which tightly
+ *   couples UI and data updates instead of separating them through a repository or ViewModel-style
+ *   layer.
  */
 public class OrganizerEventDetailsActivity extends AppCompatActivity {
     
@@ -48,6 +49,12 @@ public class OrganizerEventDetailsActivity extends AppCompatActivity {
     private boolean suppressSwitchCallback;
     private Event currentEvent;
     private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+
+    /**
+     * Initializes event detail rendering and related navigation actions.
+     *
+     * @param savedInstanceState previously saved state, or {@code null}
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -278,6 +285,9 @@ public class OrganizerEventDetailsActivity extends AppCompatActivity {
         }
     }
     
+    /**
+     * Removes snapshot listeners to avoid leaks.
+     */
     @Override
     protected void onDestroy() {
         super.onDestroy();

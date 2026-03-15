@@ -20,6 +20,10 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Fragment for the Administrator to browse and manage the list of all Organizers in the system.
+ * It also provides functionality to delete multiple Organizer accounts.
+ */
 public class AdminOrganizerFragment extends Fragment {
 
     private RecyclerView recyclerView;
@@ -28,6 +32,16 @@ public class AdminOrganizerFragment extends Fragment {
     private FirebaseFirestore db;
     private AdminViewModel viewModel;
 
+    /**
+     * Let fragment show Organizer List UI
+     * It initializes the RecyclerView, adapter,
+     * and setup event listeners for the menu actions and Organizer deletion.
+     *
+     * @param inflater           Parent view to which the fragment's UI should be attached.
+     * @param container          Parent view for the fragment's UI.
+     * @param savedInstanceState Saved state of the fragment.
+     * @return The View for the Organizer List UI.
+     */
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -48,6 +62,12 @@ public class AdminOrganizerFragment extends Fragment {
         loadOrganizersFromFirestore();
 
         adapter.setOnMenuActionListener(new ListElementAdapter.OnMenuActionListener<User>() {
+            /**
+             * Deletes selected organizer account.
+             *
+             * @param user selected organizer
+             * @param position adapter position
+             */
             @Override
             public void onDelete(User user, int position) {
                 db.collection("users").document(user.getAndroidId())
@@ -73,6 +93,9 @@ public class AdminOrganizerFragment extends Fragment {
         return view;
     }
 
+    /**
+     * Get list of Organizers from Firebase.
+     */
     private void loadOrganizersFromFirestore() {
         db.collection("users")
                 .whereEqualTo("role", "organizer")

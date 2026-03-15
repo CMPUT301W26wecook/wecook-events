@@ -52,6 +52,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Entrant event list screen with waitlist and invitation actions.
+ */
 public class UserEventActivity extends AppCompatActivity {
 
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
@@ -67,6 +70,11 @@ public class UserEventActivity extends AppCompatActivity {
     private UserEventRecord pendingJoinEventRecord;
     private AlertDialog pendingJoinDialog;
 
+    /**
+     * Initializes list UI, permissions launcher, and data loading.
+     *
+     * @param savedInstanceState previously saved state, or {@code null}
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -99,12 +107,18 @@ public class UserEventActivity extends AppCompatActivity {
         loadEventsAndHistory();
     }
 
+    /**
+     * Reloads events when returning to foreground.
+     */
     @Override
     protected void onResume() {
         super.onResume();
         loadEventsAndHistory();
     }
 
+    /**
+     * Configures entrant bottom-navigation actions.
+     */
     private void setupBottomNav() {
         bottomNav.setSelectedItemId(R.id.nav_events);
 
@@ -137,6 +151,9 @@ public class UserEventActivity extends AppCompatActivity {
     }
 
 
+    /**
+     * Loads event history statuses, then event list.
+     */
     private void loadEventsAndHistory() {
         db.collection("users")
                 .document(entrantId)
@@ -159,6 +176,11 @@ public class UserEventActivity extends AppCompatActivity {
                 });
     }
 
+    /**
+     * Loads all events and merges history status for display.
+     *
+     * @param historyStatuses map of eventId to history status
+     */
     private void loadEvents(Map<String, String> historyStatuses) {
         db.collection("events")
                 .get()
@@ -188,6 +210,11 @@ public class UserEventActivity extends AppCompatActivity {
                 .addOnFailureListener(e -> Toast.makeText(this, "Failed to load events", Toast.LENGTH_SHORT).show());
     }
 
+    /**
+     * Initializes waitlist fields on legacy event documents.
+     *
+     * @param eventReference event document reference
+     */
     private void initializeWaitingList(DocumentReference eventReference) {
         eventReference.update(
                 "waitlistEntrantIds", new ArrayList<String>(),
@@ -195,6 +222,9 @@ public class UserEventActivity extends AppCompatActivity {
         );
     }
 
+    /**
+     * Toggles empty-state visibility for the event list.
+     */
     private void updateEmptyState() {
         if (eventList.isEmpty()) {
             tvEmptyState.setVisibility(View.VISIBLE);
@@ -205,6 +235,11 @@ public class UserEventActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Shows the event-details dialog for one event record.
+     *
+     * @param eventRecord selected event
+     */
     private void showEventDetailsDialog(UserEventRecord eventRecord) {
         View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_user_event_details, null, false);
 
@@ -255,6 +290,14 @@ public class UserEventActivity extends AppCompatActivity {
         dialog.show();
     }
 
+    /**
+     * Configures dialog action buttons based on current status.
+     *
+     * @param dialog details dialog
+     * @param eventRecord selected event record
+     * @param btnJoinWaitlist primary action button
+     * @param btnSecondary secondary action button
+     */
     private void configureDialogActions(AlertDialog dialog,
                                         UserEventRecord eventRecord,
                                         Button btnJoinWaitlist,
@@ -300,6 +343,12 @@ public class UserEventActivity extends AppCompatActivity {
         btnJoinWaitlist.setOnClickListener(v -> requestLocationAndJoinWaitlist(eventRecord, dialog));
     }
 
+    /**
+     * Requests location permission if required before joining waitlist.
+     *
+     * @param eventRecord target event record
+     * @param dialog details dialog
+     */
     private void requestLocationAndJoinWaitlist(UserEventRecord eventRecord, AlertDialog dialog) {
         if (!eventRecord.isGeolocationRequired()) {
             joinWaitingList(eventRecord, dialog, null);
@@ -318,6 +367,12 @@ public class UserEventActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Reads current location and continues waitlist join flow.
+     *
+     * @param eventRecord target event record
+     * @param dialog details dialog
+     */
     private void fetchLocationAndJoinWaitlist(UserEventRecord eventRecord, AlertDialog dialog) {
         if (!hasLocationPermission()) {
             Toast.makeText(this, "Location permission is required to join the waitlist", Toast.LENGTH_SHORT).show();
@@ -354,11 +409,21 @@ public class UserEventActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * @return true when location permission is granted
+     */
     private boolean hasLocationPermission() {
         return ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
                 || ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
     }
 
+    /**
+     * Adds entrant to waitlist.
+     *
+     * @param eventRecord target event record
+     * @param dialog details dialog
+     * @param entrantLocation entrant location if available
+     */
     private void joinWaitingList(UserEventRecord eventRecord, AlertDialog dialog, Location entrantLocation) {
         updateWaitlistMembership(
                 eventRecord,
@@ -371,6 +436,12 @@ public class UserEventActivity extends AppCompatActivity {
         );
     }
 
+    /**
+     * Removes entrant from waitlist and history.
+     *
+     * @param eventRecord target event record
+     * @param dialog details dialog
+     */
     private void leaveWaitlist(UserEventRecord eventRecord, AlertDialog dialog) {
         updateWaitlistMembership(
                 eventRecord,
@@ -383,6 +454,12 @@ public class UserEventActivity extends AppCompatActivity {
         );
     }
 
+    /**
+     * Accepts invitation for an event.
+     *
+     * @param eventRecord target event record
+     * @param dialog details dialog
+     */
     private void acceptInvitation(UserEventRecord eventRecord, AlertDialog dialog) {
         updateWaitlistMembership(
                 eventRecord,
@@ -395,6 +472,12 @@ public class UserEventActivity extends AppCompatActivity {
         );
     }
 
+    /**
+     * Declines invitation for an event.
+     *
+     * @param eventRecord target event record
+     * @param dialog details dialog
+     */
     private void declineInvitation(UserEventRecord eventRecord, AlertDialog dialog) {
         updateWaitlistMembership(
                 eventRecord,
@@ -407,6 +490,17 @@ public class UserEventActivity extends AppCompatActivity {
         );
     }
 
+    /**
+     * Updates waitlist membership and history in Firestore transaction.
+     *
+     * @param eventRecord target event record
+     * @param addEntrant true to add entrant, false to remove
+     * @param newStatus new history status
+     * @param deleteHistory true to delete history record
+     * @param successMessage success toast message
+     * @param dialog details dialog
+     * @param entrantLocation entrant location if available
+     */
     private void updateWaitlistMembership(UserEventRecord eventRecord,
                                           boolean addEntrant,
                                           String newStatus,
@@ -486,6 +580,12 @@ public class UserEventActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Upserts a history document for the given event and status.
+     *
+     * @param eventRecord source event record
+     * @param status status to persist
+     */
     private void upsertHistoryDocument(UserEventRecord eventRecord, String status) {
         Map<String, Object> historyData = new HashMap<>();
         historyData.put("eventId", eventRecord.getEventId());
@@ -506,6 +606,11 @@ public class UserEventActivity extends AppCompatActivity {
                 .set(historyData);
     }
 
+    /**
+     * Deletes one history document by event id.
+     *
+     * @param eventId event identifier
+     */
     private void deleteHistoryDocument(String eventId) {
         db.collection("users")
                 .document(entrantId)
@@ -514,15 +619,31 @@ public class UserEventActivity extends AppCompatActivity {
                 .delete();
     }
 
+    /**
+     * RecyclerView adapter for entrant event list rows.
+     */
     private static class UserEventAdapter extends RecyclerView.Adapter<UserEventAdapter.UserEventViewHolder> {
         private final List<UserEventRecord> eventItems;
         private final OnEventClickListener listener;
 
+        /**
+         * Creates an event adapter.
+         *
+         * @param eventItems backing event list
+         * @param listener click listener
+         */
         private UserEventAdapter(List<UserEventRecord> eventItems, OnEventClickListener listener) {
             this.eventItems = eventItems;
             this.listener = listener;
         }
 
+        /**
+         * Inflates one event row.
+         *
+         * @param parent parent RecyclerView
+         * @param viewType view type id
+         * @return created view holder
+         */
         @NonNull
         @Override
         public UserEventViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -530,6 +651,12 @@ public class UserEventActivity extends AppCompatActivity {
             return new UserEventViewHolder(view);
         }
 
+        /**
+         * Binds one event row.
+         *
+         * @param holder row holder
+         * @param position adapter position
+         */
         @Override
         public void onBindViewHolder(@NonNull UserEventViewHolder holder, int position) {
             UserEventRecord eventItem = eventItems.get(position);
@@ -548,15 +675,26 @@ public class UserEventActivity extends AppCompatActivity {
             holder.itemView.setOnClickListener(v -> listener.onEventClick(eventItem));
         }
 
+        /**
+         * @return number of event rows
+         */
         @Override
         public int getItemCount() {
             return eventItems.size();
         }
 
+        /**
+         * ViewHolder for event row rendering.
+         */
         private static class UserEventViewHolder extends RecyclerView.ViewHolder {
             private final TextView tvEventName;
             private final TextView tvEventStatus;
 
+            /**
+             * Creates a row holder and binds row subviews.
+             *
+             * @param itemView row root view
+             */
             private UserEventViewHolder(@NonNull View itemView) {
                 super(itemView);
                 tvEventName = itemView.findViewById(R.id.tv_event_name);
@@ -565,7 +703,15 @@ public class UserEventActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Listener invoked when an event list row is tapped.
+     */
     private interface OnEventClickListener {
+        /**
+         * Handles event row click.
+         *
+         * @param eventRecord selected event record
+         */
         void onEventClick(UserEventRecord eventRecord);
     }
 
