@@ -73,6 +73,12 @@
             android:name=".OrganizerEntrantListActivity"
             android:exported="false" />
         <activity
+            android:name=".AdminLoginActivity"
+            android:exported="false" />
+        <activity
+            android:name=".AdminMainActivity"
+            android:exported="false" />
+        <activity
             android:name=".PublicEventLandingActivity"
             android:exported="true">
             <intent-filter>
