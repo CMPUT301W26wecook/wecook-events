@@ -18,6 +18,7 @@ import com.google.android.gms.tasks.Tasks;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Source;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -174,54 +175,58 @@ public class OrganizerEntrantListActivity extends AppCompatActivity {
      */
     private void loadWaitlist() {
         db.collection("events").document(eventId).get()
-                .addOnSuccessListener(documentSnapshot -> {
-                    if (!documentSnapshot.exists()) {
-                        Toast.makeText(this, "Event not found", Toast.LENGTH_SHORT).show();
-                        finish();
-                        return;
-                    }
+                .addOnSuccessListener(this::bindEventSnapshot)
+                .addOnFailureListener(e -> db.collection("events").document(eventId).get(Source.CACHE)
+                        .addOnSuccessListener(this::bindEventSnapshot)
+                        .addOnFailureListener(cacheError -> {
+                            Toast.makeText(this, "Failed to load waitlist", Toast.LENGTH_SHORT).show();
+                            showEmptyState(true);
+                        }));
+    }
 
-                    String eventName = documentSnapshot.getString("eventName");
-                    if (eventName != null && !eventName.trim().isEmpty()) {
-                        setTitle(eventName + " Waitlist");
-                    } else {
-                        setTitle("Event Waitlist");
-                    }
+    private void bindEventSnapshot(DocumentSnapshot documentSnapshot) {
+        if (!documentSnapshot.exists()) {
+            Toast.makeText(this, "Event not found", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
 
-                    // Extract and store the registration end date
-                    registrationEndDate = documentSnapshot.getDate("registrationEndDate");
+        String eventName = documentSnapshot.getString("eventName");
+        if (eventName != null && !eventName.trim().isEmpty()) {
+            setTitle(eventName + " Waitlist");
+        } else {
+            setTitle("Event Waitlist");
+        }
 
-                    List<String> entrantIds = readEntrantIds(documentSnapshot);
+        // Extract and store the registration end date
+        registrationEndDate = documentSnapshot.getDate("registrationEndDate");
 
-                    waitlistEntrantIds.clear();
-                    waitlistEntrantIds.addAll(entrantIds);
+        List<String> entrantIds = readEntrantIds(documentSnapshot);
 
-                    selectedEntrantIds.clear();
-                    Object rawSelected = documentSnapshot.get("selectedEntrantIds");
-                    if (rawSelected instanceof List<?>) {
-                        for (Object item : (List<?>) rawSelected) {
-                            if (item instanceof String) {
-                                selectedEntrantIds.add((String) item);
-                            }
-                        }
-                    }
+        waitlistEntrantIds.clear();
+        waitlistEntrantIds.addAll(entrantIds);
 
-                    replacementEntrantIds.clear();
-                    Object rawReplacement = documentSnapshot.get("replacementEntrantIds");
-                    if (rawReplacement instanceof List<?>) {
-                        for (Object item : (List<?>) rawReplacement) {
-                            if (item instanceof String) {
-                                replacementEntrantIds.add((String) item);
-                            }
-                        }
-                    }
+        selectedEntrantIds.clear();
+        Object rawSelected = documentSnapshot.get("selectedEntrantIds");
+        if (rawSelected instanceof List<?>) {
+            for (Object item : (List<?>) rawSelected) {
+                if (item instanceof String) {
+                    selectedEntrantIds.add((String) item);
+                }
+            }
+        }
 
-                    loadEntrantProfiles(entrantIds);
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Failed to load waitlist", Toast.LENGTH_SHORT).show();
-                    showEmptyState(true);
-                });
+        replacementEntrantIds.clear();
+        Object rawReplacement = documentSnapshot.get("replacementEntrantIds");
+        if (rawReplacement instanceof List<?>) {
+            for (Object item : (List<?>) rawReplacement) {
+                if (item instanceof String) {
+                    replacementEntrantIds.add((String) item);
+                }
+            }
+        }
+
+        loadEntrantProfiles(entrantIds);
     }
 
     /**
@@ -317,6 +322,52 @@ public class OrganizerEntrantListActivity extends AppCompatActivity {
      * Runs lottery draw and persists selected entrants.
      */
     private void performLotteryDraw() {
+        db.collection("events").document(eventId).get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (!documentSnapshot.exists()) {
+                        Toast.makeText(this, "Event not found", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    hydrateEventState(documentSnapshot);
+                    runLotteryWithCurrentState();
+                })
+                .addOnFailureListener(e -> db.collection("events").document(eventId).get(Source.CACHE)
+                        .addOnSuccessListener(documentSnapshot -> {
+                            if (!documentSnapshot.exists()) {
+                                Toast.makeText(this, "Event not found", Toast.LENGTH_SHORT).show();
+                                return;
+                            }
+                            hydrateEventState(documentSnapshot);
+                            runLotteryWithCurrentState();
+                        })
+                        .addOnFailureListener(cacheError ->
+                                Toast.makeText(this, "Failed to load latest event state", Toast.LENGTH_SHORT).show()));
+    }
+
+    private void performReplacementDraw() {
+        db.collection("events").document(eventId).get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (!documentSnapshot.exists()) {
+                        Toast.makeText(this, "Event not found", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    hydrateEventState(documentSnapshot);
+                    runReplacementWithCurrentState();
+                })
+                .addOnFailureListener(e -> db.collection("events").document(eventId).get(Source.CACHE)
+                        .addOnSuccessListener(documentSnapshot -> {
+                            if (!documentSnapshot.exists()) {
+                                Toast.makeText(this, "Event not found", Toast.LENGTH_SHORT).show();
+                                return;
+                            }
+                            hydrateEventState(documentSnapshot);
+                            runReplacementWithCurrentState();
+                        })
+                        .addOnFailureListener(cacheError ->
+                                Toast.makeText(this, "Failed to load latest event state", Toast.LENGTH_SHORT).show()));
+    }
+
+    private void runLotteryWithCurrentState() {
         // Check if lottery is available (only after registration ends)
         if (registrationEndDate == null) {
             Toast.makeText(this, "Registration end date not found", Toast.LENGTH_SHORT).show();
@@ -378,7 +429,7 @@ public class OrganizerEntrantListActivity extends AppCompatActivity {
                         Toast.makeText(this, "Failed to save lottery result", Toast.LENGTH_SHORT).show());
     }
 
-    private void performReplacementDraw() {
+    private void runReplacementWithCurrentState() {
         // Similar guards as lottery
         if (registrationEndDate == null) {
             Toast.makeText(this, "Registration end date not found", Toast.LENGTH_SHORT).show();
@@ -417,6 +468,33 @@ public class OrganizerEntrantListActivity extends AppCompatActivity {
                 })
                 .addOnFailureListener(e ->
                         Toast.makeText(this, "Failed to save replacement", Toast.LENGTH_SHORT).show());
+    }
+
+    private void hydrateEventState(DocumentSnapshot documentSnapshot) {
+        registrationEndDate = documentSnapshot.getDate("registrationEndDate");
+
+        waitlistEntrantIds.clear();
+        waitlistEntrantIds.addAll(readEntrantIds(documentSnapshot));
+
+        selectedEntrantIds.clear();
+        Object rawSelected = documentSnapshot.get("selectedEntrantIds");
+        if (rawSelected instanceof List<?>) {
+            for (Object item : (List<?>) rawSelected) {
+                if (item instanceof String) {
+                    selectedEntrantIds.add((String) item);
+                }
+            }
+        }
+
+        replacementEntrantIds.clear();
+        Object rawReplacement = documentSnapshot.get("replacementEntrantIds");
+        if (rawReplacement instanceof List<?>) {
+            for (Object item : (List<?>) rawReplacement) {
+                if (item instanceof String) {
+                    replacementEntrantIds.add((String) item);
+                }
+            }
+        }
     }
 
     private void sendReplacementNotification(String entrantId) {

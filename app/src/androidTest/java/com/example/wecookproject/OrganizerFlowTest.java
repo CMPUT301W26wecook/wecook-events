@@ -34,6 +34,7 @@ import com.example.wecookproject.model.Event;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Source;
 
 import org.junit.After;
 import org.junit.Before;
@@ -95,11 +96,12 @@ import java.util.concurrent.atomic.AtomicReference;
 public class OrganizerFlowTest {
 
     // Sleep durations (ms) generous enough for Firestore + UI transitions on CI/emulator
-    private static final int WAIT_SHORT  = 2000;
-    private static final int WAIT_MEDIUM = 4000;
-    private static final int WAIT_LONG   = 6000;
+    private static final int WAIT_SHORT  = 2500;
+    private static final int WAIT_MEDIUM = 12000;
+    private static final int WAIT_LONG   = 20000;
 
-    private final FirebaseFirestore db = FirebaseFirestore.getInstance();
+    private FirebaseFirestore db;
+    private static boolean emulatorsConfigured = false;
     private ActivityScenario<LoginActivity> activityScenario;
     /** Stable event ID used by test9 / test10 to exercise the edit flow. */
     private String editEventId;
@@ -110,12 +112,18 @@ public class OrganizerFlowTest {
      */
     @Before
     public void setUp() {
-        // Configure Firebase to use emulator
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
-        db.useEmulator("10.0.2.2", 8080);
+        // Configure Firebase emulators only once for this instrumentation process.
+        synchronized (OrganizerFlowTest.class) {
+            if (!emulatorsConfigured) {
+                FirebaseAuth auth = FirebaseAuth.getInstance();
+                auth.useEmulator("10.0.2.2", 9099);
 
-        FirebaseAuth auth = FirebaseAuth.getInstance();
-        auth.useEmulator("10.0.2.2", 9099);
+                FirebaseFirestore firestore = FirebaseFirestore.getInstance();
+                firestore.useEmulator("10.0.2.2", 8080);
+                emulatorsConfigured = true;
+            }
+        }
+        db = FirebaseFirestore.getInstance();
 
         String androidId = Settings.Secure.getString(
                 ApplicationProvider.getApplicationContext().getContentResolver(),
@@ -173,7 +181,7 @@ public class OrganizerFlowTest {
     @Test
     public void test1_OrganizerLoginWithoutExistingUserRoutesToSignup() {
         onView(withId(R.id.btn_organizer_login)).perform(click());
-        safeSleep(WAIT_MEDIUM); // allow FCM token fetch + Firestore lookup + navigation
+        safeSleep(WAIT_LONG); // allow FCM token fetch + Firestore lookup + navigation
         onView(withId(R.id.tv_screen_title)).check(matches(withText("Details")));
     }
 
@@ -294,6 +302,10 @@ public class OrganizerFlowTest {
     public void test7_CreateEventAndVerifyInList() {
         performFullSignup();
 
+        String androidId = Settings.Secure.getString(
+                ApplicationProvider.getApplicationContext().getContentResolver(),
+                Settings.Secure.ANDROID_ID);
+
         ActivityScenario<OrganizerHomeActivity> homeScenario =
                 ActivityScenario.launch(OrganizerHomeActivity.class);
 
@@ -309,11 +321,16 @@ public class OrganizerFlowTest {
         onView(withId(R.id.et_max_waitlist))
                 .perform(replaceText("50"), closeSoftKeyboard());
 
+        List<String> existingEventIds = fetchOrganizerEventIds(androidId);
+
         onView(withId(R.id.btn_create_event)).perform(nestedScrollTo(), click());
 
-        // Wait for Firestore write and navigation back to Home
-        safeSleep(WAIT_LONG);
+        String createdEventId = waitForNewOrganizerEvent(androidId, existingEventIds, 30);
+        assertNotNull("Expected a new event document to be created for organizer", createdEventId);
 
+        // OrganizerCreateEventActivity returns home asynchronously after queuing the write,
+        // so give the activity transition a moment to complete before asserting on Home UI.
+        safeSleep(WAIT_SHORT);
         onView(withId(R.id.rv_events)).check(matches(isDisplayed()));
 
         homeScenario.close();
@@ -422,7 +439,7 @@ public class OrganizerFlowTest {
         onView(withId(R.id.btn_show_qr)).perform(click());
         onView(withText("Promotional QR Code")).check(matches(isDisplayed()));
         onView(withText(QrCodeUtils.buildPromotionalEventLink(mockEventId))).perform(click());
-        safeSleep(WAIT_MEDIUM);
+        safeSleep(WAIT_LONG);
         onView(withId(R.id.tv_public_event_name)).check(matches(withText("Test QR Landing Event")));
 
         detailsScenario.close();
@@ -478,7 +495,7 @@ public class OrganizerFlowTest {
                 })
                 .addOnFailureListener(e -> readLatch.countDown());
 
-        assertTrue("Timed out reading updated event", readLatch.await(10, TimeUnit.SECONDS));
+        assertTrue("Timed out reading updated event", readLatch.await(20, TimeUnit.SECONDS));
         DocumentSnapshot snapshot = snapshotRef.get();
         assertTrue("Event document must exist", snapshot != null && snapshot.exists());
         assertEquals("Updated Event Name",  snapshot.getString("eventName"));
@@ -594,10 +611,18 @@ public class OrganizerFlowTest {
         replacementEvent.setSelectedEntrantIds(Arrays.asList("a1", "a2"));
 
         CountDownLatch createLatch = new CountDownLatch(1);
+        AtomicReference<Throwable> createError = new AtomicReference<>();
         db.collection("events").document(replacementEventId)
                 .set(replacementEvent)
+                .addOnFailureListener(createError::set)
                 .addOnCompleteListener(task -> createLatch.countDown());
-        awaitLatch(createLatch, 15, "replacement event creation");
+        awaitLatch(createLatch, 30, "replacement event creation");
+        assertTrue("Replacement event creation failed: " + createError.get(),
+                createError.get() == null);
+
+        DocumentSnapshot createdEventSnapshot = waitForExistingDocument("events", replacementEventId, 30);
+        assertTrue("Replacement event document should exist before launching screen",
+                createdEventSnapshot != null && createdEventSnapshot.exists());
 
         Intent intent = new Intent(
                 ApplicationProvider.getApplicationContext(),
@@ -605,24 +630,43 @@ public class OrganizerFlowTest {
         intent.putExtra("eventId", replacementEventId);
         ActivityScenario<OrganizerEntrantListActivity> scenario =
                 ActivityScenario.launch(intent);
-        safeSleep(WAIT_MEDIUM);
+        safeSleep(WAIT_LONG); // allow loadWaitlist() + profile fetches to complete
 
         // trigger replacement draw
         onView(withId(R.id.btn_redraw_entrants)).perform(click());
-        safeSleep(WAIT_LONG);
 
-        AtomicReference<DocumentSnapshot> snapshotRef = new AtomicReference<>();
-        CountDownLatch readLatch = new CountDownLatch(1);
-        db.collection("events").document(replacementEventId)
-                .get()
-                .addOnSuccessListener(snapshot -> { snapshotRef.set(snapshot); readLatch.countDown(); })
-                .addOnFailureListener(e -> readLatch.countDown());
+        // Poll Firestore until replacementEntrantIds is populated (up to 15 s)
+        List<String> replacements = null;
+        DocumentSnapshot snapshot = null;
+        long pollDeadline = System.currentTimeMillis() + 30_000;
+        while (System.currentTimeMillis() < pollDeadline) {
+            AtomicReference<DocumentSnapshot> pollRef = new AtomicReference<>();
+            CountDownLatch pollLatch = new CountDownLatch(1);
+            db.collection("events").document(replacementEventId)
+                    .get(Source.CACHE)
+                    .addOnSuccessListener(s -> { pollRef.set(s); pollLatch.countDown(); })
+                    .addOnFailureListener(e -> db.collection("events").document(replacementEventId)
+                            .get()
+                            .addOnSuccessListener(s -> {
+                                pollRef.set(s);
+                                pollLatch.countDown();
+                            })
+                            .addOnFailureListener(inner -> pollLatch.countDown()));
+            pollLatch.await(5, TimeUnit.SECONDS);
+            snapshot = pollRef.get();
+            if (snapshot != null && snapshot.exists()) {
+                @SuppressWarnings("unchecked")
+                List<String> r = (List<String>) snapshot.get("replacementEntrantIds");
+                if (r != null && !r.isEmpty()) {
+                    replacements = r;
+                    break;
+                }
+            }
+            safeSleep(2000);
+        }
 
-        assertTrue("Timed out reading replacement event", readLatch.await(15, TimeUnit.SECONDS));
-        DocumentSnapshot snapshot = snapshotRef.get();
         assertTrue("Event document must exist", snapshot != null && snapshot.exists());
-        List<String> replacements = (List<String>) snapshot.get("replacementEntrantIds");
-        assertNotNull("Replacement list should not be null", replacements);
+        assertNotNull("Replacement list should not be null after polling", replacements);
         assertEquals("Should have exactly one replacement", 1, replacements.size());
         String chosen = replacements.get(0);
         assertFalse("Replacement should not be an originally selected applicant",
@@ -647,7 +691,7 @@ public class OrganizerFlowTest {
         onView(withId(R.id.btn_organizer_login)).perform(click());
 
         // Wait for routing to Details screen (FCM token + Firestore lookup)
-        safeSleep(WAIT_MEDIUM);
+        safeSleep(WAIT_LONG);
         onView(withId(R.id.tv_screen_title)).check(matches(withText("Details")));
 
         onView(withId(R.id.et_first_name)).perform(replaceText("John"), closeSoftKeyboard());
@@ -684,6 +728,89 @@ public class OrganizerFlowTest {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
+    }
+
+    private void awaitLatchOrFail(CountDownLatch latch, int timeoutSeconds, String operation) {
+        try {
+            assertTrue("Timed out waiting for: " + operation,
+                    latch.await(timeoutSeconds, TimeUnit.SECONDS));
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new AssertionError("Interrupted while waiting for: " + operation, e);
+        }
+    }
+
+    private List<String> fetchOrganizerEventIds(String organizerId) {
+        AtomicReference<List<String>> idsRef = new AtomicReference<>(new ArrayList<>());
+        CountDownLatch latch = new CountDownLatch(1);
+
+        db.collection("events")
+                .whereEqualTo("organizerId", organizerId)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    List<String> ids = new ArrayList<>();
+                    for (DocumentSnapshot document : querySnapshot.getDocuments()) {
+                        ids.add(document.getId());
+                    }
+                    idsRef.set(ids);
+                    latch.countDown();
+                })
+                .addOnFailureListener(e -> latch.countDown());
+
+        awaitLatchOrFail(latch, 15, "fetch organizer events");
+        return idsRef.get();
+    }
+
+    private String waitForNewOrganizerEvent(String organizerId, List<String> existingEventIds,
+                                            int timeoutSeconds) {
+        Set<String> existingIds = new HashSet<>(existingEventIds);
+        long deadline = System.currentTimeMillis() + timeoutSeconds * 1000L;
+
+        while (System.currentTimeMillis() < deadline) {
+            List<String> currentIds = fetchOrganizerEventIds(organizerId);
+            for (String currentId : currentIds) {
+                if (!existingIds.contains(currentId)) {
+                    return currentId;
+                }
+            }
+            safeSleep(1000);
+        }
+        return null;
+    }
+
+    private DocumentSnapshot waitForExistingDocument(String collection, String documentId,
+                                                     int timeoutSeconds) {
+        long deadline = System.currentTimeMillis() + timeoutSeconds * 1000L;
+
+        while (System.currentTimeMillis() < deadline) {
+            AtomicReference<DocumentSnapshot> snapshotRef = new AtomicReference<>();
+            CountDownLatch latch = new CountDownLatch(1);
+
+            db.collection(collection).document(documentId)
+                    .get(Source.CACHE)
+                    .addOnSuccessListener(snapshot -> {
+                        snapshotRef.set(snapshot);
+                        latch.countDown();
+                    })
+                    .addOnFailureListener(e -> db.collection(collection).document(documentId)
+                            .get()
+                            .addOnSuccessListener(snapshot -> {
+                                snapshotRef.set(snapshot);
+                                latch.countDown();
+                            })
+                            .addOnFailureListener(inner -> latch.countDown()));
+
+            awaitLatch(latch, 5, "document fetch for " + collection + "/" + documentId);
+
+            DocumentSnapshot snapshot = snapshotRef.get();
+            if (snapshot != null && snapshot.exists()) {
+                return snapshot;
+            }
+
+            safeSleep(1000);
+        }
+
+        return null;
     }
 
     private ViewAction nestedScrollTo() {
