@@ -5,124 +5,115 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F2ECF6"
+    android:background="@color/white"
     tools:context=".OrganizerEntrantListActivity">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginBottom="80dp"
         android:orientation="vertical"
-        android:paddingHorizontal="14dp"
-        android:paddingTop="18dp"
+        android:layout_marginBottom="80dp"
         android:paddingBottom="12dp">
 
-        <ImageButton
-            android:id="@+id/btn_back"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:background="@android:color/transparent"
-            android:contentDescription="Back"
-            android:padding="6dp"
-            android:src="@drawable/ic_back"
-            app:tint="@color/text_dark" />
-
+        <!-- Search bar -->
         <androidx.appcompat.widget.SearchView
             android:id="@+id/sv_search_entrant"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:background="@drawable/bg_search_bar"
-            android:iconifiedByDefault="false"
-            android:paddingHorizontal="4dp"
-            app:queryHint="Search by Entrant Name" />
+            android:padding="8dp"
+            app:queryHint="Search by Entrant Name"
+            app:iconifiedByDefault="false" />
 
+        <!-- Entrant list -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_entrants"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_marginTop="12dp"
             android:layout_weight="1"
-            android:clipToPadding="false"
-            android:paddingBottom="8dp" />
+            android:padding="8dp"
+            android:clipToPadding="false" />
 
         <TextView
             android:id="@+id/tv_empty_state"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginHorizontal="24dp"
+            android:layout_marginTop="12dp"
             android:gravity="center"
-            android:paddingVertical="16dp"
             android:text="No entrants have joined this waiting list yet."
             android:textColor="@color/text_muted"
-            android:textSize="15sp"
+            android:textSize="16sp"
             android:visibility="gone" />
 
+        <!-- Action buttons (shown/hidden depending on list mode) -->
         <LinearLayout
             android:id="@+id/ll_action_buttons"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingTop="6dp">
+            android:padding="16dp"
+            android:paddingBottom="20dp">
 
             <Button
                 android:id="@+id/btn_send_invitation_to_selected"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:text="Send Invitation to selected" />
+                android:text="Send Invitation to selected"
+                android:layout_marginBottom="8dp" />
 
             <Button
                 android:id="@+id/btn_send_notification_to_all"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:text="Send Notification to all" />
+                android:text="Send Notification to all"
+                android:layout_marginBottom="8dp" />
 
             <Button
                 android:id="@+id/btn_view_invited"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:text="View Invited" />
+                android:text="View Invited"
+                android:layout_marginBottom="8dp" />
 
             <EditText
                 android:id="@+id/et_lottery_count"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
                 android:hint="Enter number of attendees to draw"
-                android:inputType="number" />
+                android:inputType="number"
+                android:layout_marginBottom="8dp" />
 
             <Button
                 android:id="@+id/btn_lottery_draw"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:backgroundTint="@color/outline_gray"
                 android:text="lottery Draw"
-                android:textColor="@color/text_dark" />
+                android:backgroundTint="@color/outline_gray"
+                android:textColor="@color/text_dark"
+                android:layout_marginBottom="8dp" />
 
             <Button
                 android:id="@+id/btn_redraw_entrants"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:backgroundTint="@color/outline_gray"
                 android:text="Redraw Entrants"
-                android:textColor="@color/text_dark" />
+                android:backgroundTint="@color/outline_gray"
+                android:textColor="@color/text_dark"
+                android:layout_marginBottom="8dp" />
 
             <Button
                 android:id="@+id/btn_delete_all_selected"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="4dp"
+                android:text="Delete All Selected Entrants"
                 android:backgroundTint="#DC3545"
-                android:text="Delete All Selected Entrants" />
+                android:layout_marginBottom="4dp" />
 
         </LinearLayout>
 
     </LinearLayout>
 
+    <!-- Bottom Navigation -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottom_nav"
         android:layout_width="match_parent"
