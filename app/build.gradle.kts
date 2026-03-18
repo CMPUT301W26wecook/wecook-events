@@ -1,6 +1,12 @@
+import org.gradle.api.tasks.compile.JavaCompile
+
 plugins {
     alias(libs.plugins.android.application)
     id("com.google.gms.google-services")
+}
+
+tasks.withType<JavaCompile>().configureEach {
+    options.compilerArgs.addAll(listOf("-Xlint:deprecation", "-Xlint:unchecked"))
 }
 
 val mapsApiKey = (project.findProperty("MAPS_API_KEY") as String?)
