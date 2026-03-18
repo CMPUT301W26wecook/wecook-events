@@ -31,6 +31,9 @@
             android:name=".UserProfileActivity"
             android:exported="false" />
         <activity
+            android:name=".UserNotificationActivity"
+            android:exported="false" />
+        <activity
             android:name=".UserEventActivity"
             android:exported="false" />
         <activity

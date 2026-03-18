@@ -159,8 +159,11 @@ public class OrganizerEntrantListActivity extends AppCompatActivity {
         findViewById(R.id.btn_send_invitation_to_selected).setOnClickListener(v -> {
             sendInvitationToSelected();
         });
-        findViewById(R.id.btn_send_notification_to_all).setOnClickListener(v ->
-                startActivity(new Intent(this, OrganizerNotificationActivity.class)));
+        findViewById(R.id.btn_send_notification_to_all).setOnClickListener(v -> {
+            Intent intent = new Intent(this, OrganizerNotificationActivity.class);
+            intent.putExtra("eventId", eventId);
+            startActivity(intent);
+        });
         findViewById(R.id.btn_view_invited).setOnClickListener(v -> {
             Intent intent = new Intent(this, OrganizerEntrantInvitedListActivity.class);
             intent.putExtra("eventId", eventId);
