@@ -128,11 +128,11 @@ public class OrganizerEntrantListActivity extends AppCompatActivity {
         searchView.setIconifiedByDefault(false);
         searchView.setIconified(false);
         searchView.clearFocus();
-        searchView.setQueryHint("Search by Entrant Name");
+        searchView.setQueryHint("Search by entrant name or phone");
 
         EditText searchText = searchView.findViewById(androidx.appcompat.R.id.search_src_text);
         if (searchText != null) {
-            searchText.setHint("Search by Entrant Name");
+            searchText.setHint("Search by entrant name or phone");
             searchText.setHintTextColor(Color.parseColor("#7A7A7A"));
             searchText.setTextColor(Color.parseColor("#1F1F1F"));
         }
