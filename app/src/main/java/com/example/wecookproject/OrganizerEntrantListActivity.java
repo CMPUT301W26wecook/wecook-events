@@ -1,11 +1,14 @@
 package com.example.wecookproject;
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ImageButton;
 
 import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.app.AppCompatActivity;
@@ -17,6 +20,7 @@ import com.google.android.gms.tasks.Tasks;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -48,7 +52,11 @@ public class OrganizerEntrantListActivity extends AppCompatActivity {
     private android.widget.EditText lotteryCountInput;
     private final List<String> waitlistEntrantIds = new ArrayList<>();
     private final List<String> selectedEntrantIds = new ArrayList<>();
+    private final List<String> replacementEntrantIds = new ArrayList<>();
+    private int lotteryCount = 0;
     private Date registrationEndDate;
+    private boolean waitlistLoaded = false;
+
 
     /**
      * Initializes organizer entrant management screen and loads waitlist data.
@@ -68,10 +76,12 @@ public class OrganizerEntrantListActivity extends AppCompatActivity {
         emptyStateView = findViewById(R.id.tv_empty_state);
         actionButtons = findViewById(R.id.ll_action_buttons);
         lotteryCountInput = findViewById(R.id.et_lottery_count);
+        ImageButton backButton = findViewById(R.id.btn_back);
 
         entrantsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
-        adapter = new OrganizerWaitlistAdapter();
+        adapter = new OrganizerWaitlistAdapter(this::deleteEntrant);
         entrantsRecyclerView.setAdapter(adapter);
+        backButton.setOnClickListener(v -> finish());
 
         setupBottomNav();
         setupSearch();
@@ -115,6 +125,18 @@ public class OrganizerEntrantListActivity extends AppCompatActivity {
      * Configures waitlist search behavior.
      */
     private void setupSearch() {
+        searchView.setIconifiedByDefault(false);
+        searchView.setIconified(false);
+        searchView.clearFocus();
+        searchView.setQueryHint("Search by Entrant Name");
+
+        EditText searchText = searchView.findViewById(androidx.appcompat.R.id.search_src_text);
+        if (searchText != null) {
+            searchText.setHint("Search by Entrant Name");
+            searchText.setHintTextColor(Color.parseColor("#7A7A7A"));
+            searchText.setTextColor(Color.parseColor("#1F1F1F"));
+        }
+
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             /**
              * Handles submitted search query.
@@ -150,27 +172,114 @@ public class OrganizerEntrantListActivity extends AppCompatActivity {
 
         // Reserved for sending invitations to selected entrants once that feature is implemented.
         findViewById(R.id.btn_send_invitation_to_selected).setOnClickListener(v -> {
-            Toast.makeText(this, "Invitations are not available yet", Toast.LENGTH_SHORT).show();
+            sendInvitationToSelected();
         });
-        // Opens the organizer notification screen for sending a broadcast message.
-        findViewById(R.id.btn_send_notification_to_all).setOnClickListener(v ->
-            startActivity(new Intent(this, OrganizerNotificationActivity.class)));
-        // Reserved for opening the invited entrants view once that feature is implemented.
+        findViewById(R.id.btn_send_notification_to_all).setOnClickListener(v -> {
+            Intent intent = new Intent(this, OrganizerNotificationActivity.class);
+            intent.putExtra("eventId", eventId);
+            startActivity(intent);
+        });
         findViewById(R.id.btn_view_invited).setOnClickListener(v -> {
-            Toast.makeText(this, "Invited list is not available yet", Toast.LENGTH_SHORT).show();
+            Intent intent = new Intent(this, OrganizerEntrantInvitedListActivity.class);
+            intent.putExtra("eventId", eventId);
+            startActivity(intent);
         });
-        // Starts the lottery draw using the number entered by the organizer.
-        findViewById(R.id.btn_lottery_draw).setOnClickListener(v -> {
+        /**
+         findViewById(R.id.btn_lottery_draw).setOnClickListener(v -> {
             performLotteryDraw();
         });
         // Reserved for rerunning the lottery once redraw support is implemented.
         findViewById(R.id.btn_redraw_entrants).setOnClickListener(v -> {
-            Toast.makeText(this, "Redraw is not available yet", Toast.LENGTH_SHORT).show();
+            performReplacementDraw();
         });
-        // Reserved for bulk deletion of selected entrants once that feature is implemented.
+        **/
+
+        View lotteryButton = findViewById(R.id.btn_lottery_draw);
+        View redrawButton = findViewById(R.id.btn_redraw_entrants);
+
+        lotteryButton.setEnabled(false);
+        redrawButton.setEnabled(false);
+
+        lotteryButton.setOnClickListener(v -> performLotteryDraw());
+        redrawButton.setOnClickListener(v -> performReplacementDraw());
+
         findViewById(R.id.btn_delete_all_selected).setOnClickListener(v -> {
             Toast.makeText(this, "Bulk delete is not available yet", Toast.LENGTH_SHORT).show();
         });
+    }
+
+    /**
+     * Persists selected entrants as invited so they appear in the invited list.
+     */
+    private void sendInvitationToSelected() {
+        List<String> selectedEntrants = adapter.getSelectedEntrantIds();
+        if (selectedEntrants.isEmpty()) {
+            Toast.makeText(this, "Select at least one entrant first", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        List<String> updatedSelected = new ArrayList<>(selectedEntrantIds);
+        for (String entrantId : selectedEntrants) {
+            if (!updatedSelected.contains(entrantId)) {
+                updatedSelected.add(entrantId);
+            }
+        }
+
+        db.collection("events").document(eventId)
+                .update("selectedEntrantIds", updatedSelected)
+                .addOnSuccessListener(unused -> {
+                    selectedEntrantIds.clear();
+                    selectedEntrantIds.addAll(updatedSelected);
+                    Toast.makeText(this, "Invitation list updated", Toast.LENGTH_SHORT).show();
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, "Failed to update invitation list", Toast.LENGTH_SHORT).show());
+    }
+
+    /**
+     * Deletes one entrant from the event waitlist.
+     *
+     * @param item entrant row data
+     */
+    private void deleteEntrant(OrganizerWaitlistItem item) {
+        String entrantId = item.getEntrantId();
+        List<String> updatedWaitlist = new ArrayList<>(waitlistEntrantIds);
+        if (!updatedWaitlist.remove(entrantId)) {
+            Toast.makeText(this, "Entrant is no longer in the waitlist", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        List<String> updatedSelected = new ArrayList<>(selectedEntrantIds);
+        updatedSelected.remove(entrantId);
+        List<String> updatedReplacement = new ArrayList<>(replacementEntrantIds);
+        updatedReplacement.remove(entrantId);
+
+        db.collection("events").document(eventId)
+                .update(
+                        "waitlistEntrantIds", updatedWaitlist,
+                        "selectedEntrantIds", updatedSelected,
+                        "replacementEntrantIds", updatedReplacement
+                )
+                .addOnSuccessListener(unused -> {
+                    waitlistEntrantIds.clear();
+                    waitlistEntrantIds.addAll(updatedWaitlist);
+                    selectedEntrantIds.clear();
+                    selectedEntrantIds.addAll(updatedSelected);
+                    replacementEntrantIds.clear();
+                    replacementEntrantIds.addAll(updatedReplacement);
+
+                    for (int i = 0; i < allEntrants.size(); i++) {
+                        if (entrantId.equals(allEntrants.get(i).getEntrantId())) {
+                            allEntrants.remove(i);
+                            break;
+                        }
+                    }
+
+                    applyFilter(searchView.getQuery() != null ? searchView.getQuery().toString() : "");
+                    Toast.makeText(this, "Entrant deleted", Toast.LENGTH_SHORT).show();
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, "Failed to delete entrant", Toast.LENGTH_SHORT).show());
     }
 
     /**
@@ -210,6 +319,26 @@ public class OrganizerEntrantListActivity extends AppCompatActivity {
                         }
                     }
 
+                    replacementEntrantIds.clear();
+                    Object rawReplacement = documentSnapshot.get("replacementEntrantIds");
+                    if (rawReplacement instanceof List<?>) {
+                        for (Object item : (List<?>) rawReplacement) {
+                            if (item instanceof String) {
+                                replacementEntrantIds.add((String) item);
+                            }
+                        }
+                    }
+
+                    Object rawLotteryCount = documentSnapshot.get("lotteryCount");
+                    if (rawLotteryCount instanceof Number) {
+                        lotteryCount = ((Number) rawLotteryCount).intValue();
+                    } else {
+                        lotteryCount = 0;
+                    }
+
+                    waitlistLoaded = true;
+                    findViewById(R.id.btn_lottery_draw).setEnabled(true);
+                    findViewById(R.id.btn_redraw_entrants).setEnabled(true);
                     loadEntrantProfiles(entrantIds);
                 })
                 .addOnFailureListener(e -> {
@@ -311,6 +440,11 @@ public class OrganizerEntrantListActivity extends AppCompatActivity {
      * Runs lottery draw and persists selected entrants.
      */
     private void performLotteryDraw() {
+        if (!waitlistLoaded) {
+            Toast.makeText(this, "Waitlist is still loading", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         // Check if lottery is available (only after registration ends)
         if (registrationEndDate == null) {
             Toast.makeText(this, "Registration end date not found", Toast.LENGTH_SHORT).show();
@@ -370,5 +504,68 @@ public class OrganizerEntrantListActivity extends AppCompatActivity {
                 })
                 .addOnFailureListener(e ->
                         Toast.makeText(this, "Failed to save lottery result", Toast.LENGTH_SHORT).show());
+    }
+
+    private void performReplacementDraw() {
+        if (!waitlistLoaded) {
+            Toast.makeText(this, "Waitlist is still loading", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (registrationEndDate == null) {
+            Toast.makeText(this, "Registration end date not found", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        Date currentDate = new Date();
+        if (!currentDate.after(registrationEndDate)) {
+            Toast.makeText(this, "Replacement draw is available only after registration ends", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (lotteryCount <= 0) {
+            Toast.makeText(this, "Run lottery draw before selecting replacements", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        int vacancies = lotteryCount - selectedEntrantIds.size();
+        if (vacancies <= 0) {
+            Toast.makeText(this, "No replacement needed at this time", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        List<String> pool = new ArrayList<>(waitlistEntrantIds);
+        pool.removeAll(selectedEntrantIds);
+        pool.removeAll(replacementEntrantIds);
+        if (pool.isEmpty()) {
+            Toast.makeText(this, "No remaining applicants for replacement", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        java.util.Collections.shuffle(pool);
+        int drawCount = Math.min(vacancies, pool.size());
+        List<String> drawn = new ArrayList<>(pool.subList(0, drawCount));
+        List<String> newReplacements = new ArrayList<>(replacementEntrantIds);
+        newReplacements.addAll(drawn);
+        List<String> newSelected = new ArrayList<>(selectedEntrantIds);
+        newSelected.addAll(drawn);
+        db.collection("events").document(eventId)
+                .update(
+                        "replacementEntrantIds", newReplacements,
+                        "selectedEntrantIds", newSelected
+                )
+                .addOnSuccessListener(unused -> {
+                    replacementEntrantIds.clear();
+                    replacementEntrantIds.addAll(newReplacements);
+                    selectedEntrantIds.clear();
+                    selectedEntrantIds.addAll(newSelected);
+                    Toast.makeText(this, "Replacement selected", Toast.LENGTH_SHORT).show();
+                    for (String entrant : drawn) {
+                        sendReplacementNotification(entrant);
+                    }
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, "Failed to save replacement", Toast.LENGTH_SHORT).show());
+    }
+
+    private void sendReplacementNotification(String entrantId) {
+        // TODO: implement push notification logic or FCM integration
+        // placeholder to satisfy optional acceptance criterion
+        // Log.d("REPLACEMENT", "Would notify entrant " + entrantId);
     }
 }

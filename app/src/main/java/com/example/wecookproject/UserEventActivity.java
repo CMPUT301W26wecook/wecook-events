@@ -132,16 +132,14 @@ public class UserEventActivity extends AppCompatActivity {
                 return true;
             } else if (itemId == R.id.nav_history) {
                 Intent intent = new Intent(UserEventActivity.this, UserHistoryActivity.class);
-                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_NO_ANIMATION);
                 startActivity(intent);
-                overridePendingTransition(0, 0);
                 finish();
                 return true;
             } else if (itemId == R.id.nav_profile) {
                 Intent intent = new Intent(UserEventActivity.this, UserProfileActivity.class);
-                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_NO_ANIMATION);
                 startActivity(intent);
-                overridePendingTransition(0, 0);
                 finish();
                 return true;
             }
@@ -187,6 +185,11 @@ public class UserEventActivity extends AppCompatActivity {
                 .addOnSuccessListener(eventSnapshots -> {
                     eventList.clear();
                     for (QueryDocumentSnapshot document : eventSnapshots) {
+                        String visibilityTag = document.getString("visibilityTag");
+                        if (Event.VISIBILITY_PRIVATE.equalsIgnoreCase(visibilityTag)) {
+                            continue;
+                        }
+
                         if (!document.contains("waitlistEntrantIds")) {
                             initializeWaitingList(document.getReference());
                         }
@@ -516,8 +519,7 @@ public class UserEventActivity extends AppCompatActivity {
                 throw new IllegalStateException("Event not found");
             }
 
-            @SuppressWarnings("unchecked")
-            List<String> waitlistEntrants = (List<String>) snapshot.get("waitlistEntrantIds");
+            List<String> waitlistEntrants = FirestoreFieldUtils.getStringList(snapshot, "waitlistEntrantIds");
             if (waitlistEntrants == null) {
                 waitlistEntrants = new ArrayList<>();
             } else {
